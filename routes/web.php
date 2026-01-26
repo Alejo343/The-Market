@@ -24,10 +24,33 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    // Aquí irán tus rutas de productos, ventas, inventario...
-    Route::resource('products', \App\Http\Controllers\Web\ProductController::class);
-    Route::resource('sales', \App\Http\Controllers\Web\SaleController::class);
-    Route::get('inventory', [\App\Http\Controllers\Web\InventoryController::class, 'index'])->name('inventory.index');
+    // Ventas
+    Route::view('/sales', 'sales.index')->name('sales.index');
+    Route::view('/sales/create', 'sales.create')->name('sales.create');
+    Route::view('/sales/{id}', 'sales.show')->name('sales.show');
+
+    // Inventario
+    Route::view('/products', 'products.index')->name('products.index');
+    Route::view('/variants', 'variants.index')->name('variants.index');
+    Route::view('/weight-lots', 'weight-lots.index')->name('weight-lots.index');
+    Route::view('/inventory/movements', 'inventory.movements')->name('inventory.movements');
+    Route::view('/inventory/alerts', 'inventory.alerts')->name('inventory.alerts');
+
+    // Catálogo
+    Route::livewire('/categories', 'pages::category.index');
+    Route::livewire('/categories/create', 'pages::category.create');
+    Route::view('/brands', 'brands.index')->name('brands.index');
+    Route::view('/taxes', 'taxes.index')->name('taxes.index');
+
+    // Reportes
+    Route::view('/reports/sales', 'reports.sales')->name('reports.sales');
+    Route::view('/reports/top-products', 'reports.top-products')->name('reports.top-products');
+    Route::view('/reports/inventory', 'reports.inventory')->name('reports.inventory');
+    Route::view('/reports/price-history', 'reports.price-history')->name('reports.price-history');
+
+    // Configuración
+    Route::view('/users', 'users.index')->name('users.index');
+    Route::view('/profile', 'profile.edit')->name('profile.edit');
 });
