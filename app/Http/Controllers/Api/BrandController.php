@@ -7,88 +7,80 @@ use App\Http\Requests\StoreBrandRequest;
 use App\Http\Requests\UpdateBrandRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
+use App\Services\BrandService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Exception;
 
 class BrandController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(
+        protected BrandService $service
+    ) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Brand::query();
-
-        // Búsqueda por nombre
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->input('search') . '%');
-        }
-
-        // Incluir relaciones si se solicitan
-        if ($request->has('include')) {
-            $includes = explode(',', $request->input('include'));
-            $query->with($includes);
-        }
-
-        $brands = $query->orderBy('name')->get();
+        $brands = $this->service->list(
+            include: $request->has('include')
+                ? explode(',', $request->input('include'))
+                : null,
+            search: $request->filled('search')
+                ? $request->input('search')
+                : null
+        );
 
         return BrandResource::collection($brands);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreBrandRequest $request): JsonResponse
     {
-        $brand = Brand::create($request->validated());
+        $brand = $this->service->create(
+            $request->validated()
+        );
 
         return (new BrandResource($brand))
             ->response()
             ->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Request $request, Brand $brand): BrandResource
     {
-        // Cargar relaciones si se solicitan
-        if ($request->has('include')) {
-            $includes = explode(',', $request->input('include'));
-            $brand->load($includes);
-        }
+        $include = $request->has('include')
+            ? explode(',', $request->input('include'))
+            : null;
 
-        return new BrandResource($brand);
+        return new BrandResource(
+            $this->service->show($brand, $include)
+        );
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateBrandRequest $request, Brand $brand): BrandResource
     {
-        $brand->update($request->validated());
-
-        return new BrandResource($brand);
+        return new BrandResource(
+            $this->service->update(
+                $brand,
+                $request->validated()
+            )
+        );
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Brand $brand): JsonResponse
     {
-        // Verificar si tiene productos asociados
-        if ($brand->products()->exists()) {
+        try {
+            $this->service->delete($brand);
+
             return response()->json([
-                'message' => 'No se puede eliminar una marca que tiene productos asociados',
-                'error' => 'brand_has_products'
+                'message' => 'Marca eliminada exitosamente'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => match ($e->getMessage()) {
+                    'BRAND_HAS_PRODUCTS' =>
+                    'No se puede eliminar una marca que tiene productos asociados',
+                    default => 'Error inesperado'
+                }
             ], 422);
         }
-
-        $brand->delete();
-
-        return response()->json([
-            'message' => 'Marca eliminada exitosamente'
-        ], 200);
     }
 }

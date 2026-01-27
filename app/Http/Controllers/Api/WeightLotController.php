@@ -6,126 +6,96 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreWeightLotRequest;
 use App\Http\Requests\UpdateWeightLotRequest;
 use App\Http\Resources\WeightLotResource;
-use App\Models\Product;
 use App\Models\WeightLot;
+use App\Services\WeightLotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Exception;
 
 class WeightLotController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(
+        protected WeightLotService $service
+    ) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = WeightLot::query();
-
-        // Filtrar por producto
-        if ($request->filled('product_id')) {
-            $query->where('product_id', $request->input('product_id'));
-        }
-
-        // Filtrar solo activos
-        if ($request->boolean('active_only')) {
-            $query->active();
-        }
-
-        // Filtrar solo con peso disponible
-        if ($request->boolean('available_only')) {
-            $query->available();
-        }
-
-        // Filtrar vencidos
-        if ($request->boolean('expired_only')) {
-            $query->expired();
-        }
-
-        // Filtrar próximos a vencer
-        if ($request->boolean('expiring_soon')) {
-            $query->expiringSoon();
-        }
-
-        // Incluir relaciones si se solicitan
-        if ($request->has('include')) {
-            $includes = explode(',', $request->input('include'));
-            $query->with($includes);
-        }
-
-        $lots = $query->orderBy('created_at', 'desc')->get();
+        $lots = $this->service->list(
+            productId: $request->filled('product_id')
+                ? $request->integer('product_id')
+                : null,
+            activeOnly: $request->boolean('active_only'),
+            availableOnly: $request->boolean('available_only'),
+            expiredOnly: $request->boolean('expired_only'),
+            expiringSoon: $request->boolean('expiring_soon'),
+            include: $request->has('include')
+                ? explode(',', $request->input('include'))
+                : null
+        );
 
         return WeightLotResource::collection($lots);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreWeightLotRequest $request): JsonResponse
     {
-        // Verificar que el producto sea de tipo 'weight'
-        $product = Product::findOrFail($request->input('product_id'));
+        try {
+            $lot = $this->service->create(
+                $request->validated()
+            );
 
-        if ($product->sale_type !== 'weight') {
-            return response()->json([
-                'message' => 'Solo se pueden crear lotes para productos de venta por peso',
-                'error' => 'invalid_product_type'
-            ], 422);
+            return (new WeightLotResource($lot))
+                ->response()
+                ->setStatusCode(201);
+        } catch (Exception $e) {
+            if ($e->getMessage() === 'INVALID_PRODUCT_TYPE') {
+                return response()->json([
+                    'message' => 'Solo se pueden crear lotes para productos de venta por peso',
+                    'error' => 'invalid_product_type'
+                ], 422);
+            }
+
+            throw $e;
         }
-
-        $lot = WeightLot::create($request->validated());
-
-        $lot->load('product');
-
-        return (new WeightLotResource($lot))
-            ->response()
-            ->setStatusCode(201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Request $request, WeightLot $weightLot): WeightLotResource
     {
-        // Cargar relaciones si se solicitan
-        if ($request->has('include')) {
-            $includes = explode(',', $request->input('include'));
-            $weightLot->load($includes);
-        } else {
-            $weightLot->load('product');
-        }
+        $include = $request->has('include')
+            ? explode(',', $request->input('include'))
+            : null;
 
-        return new WeightLotResource($weightLot);
+        return new WeightLotResource(
+            $this->service->show($weightLot, $include)
+        );
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateWeightLotRequest $request, WeightLot $weightLot): WeightLotResource
     {
-        $weightLot->update($request->validated());
-
-        $weightLot->load('product');
-
-        return new WeightLotResource($weightLot);
+        return new WeightLotResource(
+            $this->service->update(
+                $weightLot,
+                $request->validated()
+            )
+        );
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(WeightLot $weightLot): JsonResponse
     {
-        // Verificar si tiene ventas asociadas
-        if ($weightLot->saleItems()->exists()) {
+        try {
+            $this->service->delete($weightLot);
+
             return response()->json([
-                'message' => 'No se puede eliminar un lote que tiene ventas asociadas',
-                'error' => 'lot_has_sales'
+                'message' => 'Lote eliminado exitosamente'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => match ($e->getMessage()) {
+                    'LOT_HAS_SALES' =>
+                    'No se puede eliminar un lote que tiene ventas asociadas',
+                    default => 'Error inesperado'
+                }
             ], 422);
         }
-
-        $weightLot->delete();
-
-        return response()->json([
-            'message' => 'Lote eliminado exitosamente'
-        ], 200);
     }
 }
