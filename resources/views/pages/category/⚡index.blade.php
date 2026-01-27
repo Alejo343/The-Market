@@ -18,7 +18,6 @@ new class extends Component {
 
     public function mount()
     {
-        \Log::info('Component mounted!');
         $this->resetMessages();
     }
 
@@ -27,7 +26,6 @@ new class extends Component {
      */
     public function with(CategoryService $categoryService): array
     {
-        \Log::info('With method called');
         try {
             if ($this->showRootOnly) {
                 $categories = $categoryService->getRootCategories();
@@ -37,7 +35,6 @@ new class extends Component {
                 $categories = $categoryService->getAll();
             }
 
-            \Log::info('Categories count: ' . $categories->count());
             $categories->loadCount(['subcategories', 'products']);
 
             return [
@@ -103,6 +100,7 @@ new class extends Component {
      */
     public function save(CategoryService $categoryService)
     {
+        \Log::info('Save method called!');
         $this->resetMessages();
 
         $this->validate(
@@ -164,7 +162,7 @@ new class extends Component {
 
         try {
             $category = Category::findOrFail($this->deletingId);
-            $categoryService->update->delete($category);
+            $categoryService->delete($category);
 
             $this->successMessage = 'Categoría eliminada exitosamente';
             $this->deletingId = null;
@@ -288,7 +286,7 @@ new class extends Component {
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($categories as $category)
-                    <tr class="hover:bg-gray-50 transition-colors">
+                    <tr class="hover:bg-gray-50 transition-colors" wire:key="category-{{ $category->id }}">
                         <td class="px-6 py-4">
                             @if ($editingId === $category->id)
                                 <input type="text" wire:model="name"
@@ -329,12 +327,12 @@ new class extends Component {
                         </td>
                         <td class="px-6 py-4">
                             <span class="text-sm text-gray-600">
-                                {{ $category->subcategories_count ?? 0 }}
+                                {{ $category->products_count ?? 0 }}
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right">
                             @if ($editingId === $category->id)
-                                <div class="flex justify-end gap-2">
+                                <div class="flex justify-end gap-2" wire:key="edit-buttons-{{ $category->id }}">
                                     <button wire:click="save"
                                         class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors">
                                         Guardar
@@ -345,7 +343,7 @@ new class extends Component {
                                     </button>
                                 </div>
                             @else
-                                <div class="flex justify-end gap-2">
+                                <div class="flex justify-end gap-2" wire:key="action-buttons-{{ $category->id }}">
                                     <button wire:click="edit({{ $category->id }})"
                                         class="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                                         title="Editar">

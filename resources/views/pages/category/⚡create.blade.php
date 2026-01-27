@@ -3,30 +3,23 @@ use Livewire\Component;
 use App\Services\CategoryService;
 
 new class extends Component {
-    public CategoryService $categoryService;
-
     public string $name = '';
     public ?int $parent_id = null;
-
-    public function boot(CategoryService $categoryService)
-    {
-        $this->categoryService = $categoryService;
-    }
 
     /**
      * Computed property para obtener todas las categorías disponibles
      */
-    public function with(): array
+    public function with(CategoryService $categoryService): array
     {
         return [
-            'categories' => $this->categoryService->getAll(),
+            'categories' => $categoryService->getAll(),
         ];
     }
 
     /**
      * Crea una nueva categoría
      */
-    public function save()
+    public function save(CategoryService $categoryService)
     {
         $validated = $this->validate(
             [
@@ -42,7 +35,7 @@ new class extends Component {
         );
 
         try {
-            $this->categoryService->create($validated);
+            $categoryService->create($validated);
 
             session()->flash('success', 'Categoría creada exitosamente');
             return $this->redirect('/categories');
