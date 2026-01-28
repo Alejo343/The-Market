@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\TaxController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WeightLotController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,11 @@ Route::get('weight-lots/{weight_lot}', [WeightLotController::class, 'show']);
 // ============================================
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Usuarios
+    Route::apiResource('users', UserController::class);
+    Route::post('users/{user}/activate', [UserController::class, 'activate']);
+    Route::post('users/{user}/deactivate', [UserController::class, 'deactivate']);
+
 
     // Usuario autenticado
     Route::get('/me', [AuthController::class, 'me']);

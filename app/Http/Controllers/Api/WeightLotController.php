@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReduceWeightRequest;
 use App\Http\Requests\StoreWeightLotRequest;
 use App\Http\Requests\UpdateWeightLotRequest;
 use App\Http\Resources\WeightLotResource;
@@ -29,6 +30,9 @@ class WeightLotController extends Controller
             availableOnly: $request->boolean('available_only'),
             expiredOnly: $request->boolean('expired_only'),
             expiringSoon: $request->boolean('expiring_soon'),
+            search: $request->filled('search')
+                ? $request->input('search')
+                : null,
             include: $request->has('include')
                 ? explode(',', $request->input('include'))
                 : null
@@ -80,6 +84,32 @@ class WeightLotController extends Controller
         );
     }
 
+    public function reduceWeight(ReduceWeightRequest $request, WeightLot $weightLot): JsonResponse
+    {
+        try {
+            $updatedLot = $this->service->reduceWeight(
+                $weightLot,
+                $request->validated('weight')
+            );
+
+            return (new WeightLotResource($updatedLot))
+                ->response()
+                ->setStatusCode(200);
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => match ($e->getMessage()) {
+                    'WEIGHT_LOT_INACTIVE' =>
+                    'El lote de peso no está activo',
+                    'WEIGHT_LOT_EXPIRED' =>
+                    'El lote de peso está vencido',
+                    'INSUFFICIENT_WEIGHT' =>
+                    'No hay suficiente peso disponible en el lote',
+                    default => 'Error inesperado al reducir el peso'
+                }
+            ], 422);
+        }
+    }
+
     public function destroy(WeightLot $weightLot): JsonResponse
     {
         try {
@@ -91,8 +121,10 @@ class WeightLotController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'message' => match ($e->getMessage()) {
-                    'LOT_HAS_SALES' =>
+                    'WEIGHT_LOT_HAS_SALES' =>
                     'No se puede eliminar un lote que tiene ventas asociadas',
+                    'WEIGHT_LOT_HAS_MOVEMENTS' =>
+                    'No se puede eliminar un lote que tiene movimientos de inventario',
                     default => 'Error inesperado'
                 }
             ], 422);

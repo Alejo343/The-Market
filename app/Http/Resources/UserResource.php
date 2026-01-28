@@ -18,8 +18,13 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'created_at' => $this->created_at->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at->format('Y-m-d H:i:s'),
+            'role' => $this->role,
+            'active' => $this->active,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+
+            // Relaciones
+            'sales' => SaleResource::collection($this->whenLoaded('sales')),
         ];
     }
 }

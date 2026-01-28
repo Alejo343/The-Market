@@ -36,7 +36,10 @@ class SaleController extends Controller
             endDate: $request->filled('end_date')
                 ? $request->input('end_date')
                 : null,
-            today: $request->boolean('today')
+            today: $request->boolean('today'),
+            include: $request->has('include')
+                ? explode(',', $request->input('include'))
+                : null
         );
 
         return SaleResource::collection($sales);
@@ -71,10 +74,14 @@ class SaleController extends Controller
         }
     }
 
-    public function show(Sale $sale): SaleResource
+    public function show(Request $request, Sale $sale): SaleResource
     {
+        $include = $request->has('include')  // ⬅️ AGREGAR ESTO
+            ? explode(',', $request->input('include'))
+            : null;
+
         return new SaleResource(
-            $this->service->show($sale)
+            $this->service->show($sale, $include)  // ⬅️ PASAR INCLUDE
         );
     }
 

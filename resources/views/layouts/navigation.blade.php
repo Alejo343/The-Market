@@ -29,7 +29,7 @@
                 Nueva Venta (POS)
             </a>
 
-            <a href="{{ route('sales.index') }}"
+            <a href="/reports/sales" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('sales.index') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -44,7 +44,7 @@
         <div class="mt-6">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Inventario</h3>
 
-            <a href="{{ route('products.index') }}"
+            <a href="/products" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('products.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -53,7 +53,7 @@
                 Productos
             </a>
 
-            <a href="{{ route('variants.index') }}"
+            <a href="/product-variants" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('variants.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -63,7 +63,7 @@
                 Variantes y Precios
             </a>
 
-            <a href="{{ route('weight-lots.index') }}"
+            <a href="/weight-lots" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('weight-lots.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -97,9 +97,7 @@
         <div class="mt-6">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Catálogo</h3>
 
-            {{-- <a href="{{ route('categories.index') }}" --}}
-            {{-- <a href="{{ route('categories.index') }}" --}}
-            <a href="/categories" wire:navigate {{-- <a href="/posts" wire:navigate>Posts</a> --}}
+            <a href="/categories" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('categories.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -108,7 +106,7 @@
                 Categorías
             </a>
 
-            <a href="{{ route('brands.index') }}"
+            <a href="/brands" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('brands.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -133,7 +131,7 @@
         <div class="mt-6">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Reportes</h3>
 
-            <a href="{{ route('reports.sales') }}"
+            <a href="/reports/sales" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('reports.sales') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

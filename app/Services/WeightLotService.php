@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Product;
 use App\Models\WeightLot;
 use Illuminate\Database\Eloquent\Collection;
 use Exception;
@@ -14,10 +13,11 @@ class WeightLotService
      */
     public function list(
         ?int $productId = null,
-        bool $activeOnly = false,
-        bool $availableOnly = false,
-        bool $expiredOnly = false,
-        bool $expiringSoon = false,
+        ?bool $activeOnly = null,
+        ?bool $availableOnly = null,
+        ?bool $expiredOnly = null,
+        ?bool $expiringSoon = null,
+        ?string $search = null,
         ?array $include = null
     ): Collection {
         $query = WeightLot::query();
@@ -42,6 +42,12 @@ class WeightLotService
             $query->expiringSoon();
         }
 
+        if ($search) {
+            $query->whereHas('product', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        }
+
         if ($include) {
             $query->with($include);
         }
@@ -58,14 +64,6 @@ class WeightLotService
     }
 
     /**
-     * Obtiene lotes por producto
-     */
-    public function getByProduct(int $productId): Collection
-    {
-        return $this->list(productId: $productId);
-    }
-
-    /**
      * Obtiene lotes activos
      */
     public function getActive(): Collection
@@ -74,7 +72,7 @@ class WeightLotService
     }
 
     /**
-     * Obtiene lotes disponibles
+     * Obtiene lotes con peso disponible
      */
     public function getAvailable(): Collection
     {
@@ -98,61 +96,97 @@ class WeightLotService
     }
 
     /**
-     * Crea un nuevo lote
+     * Obtiene lotes por producto
+     */
+    public function getByProduct(int $productId): Collection
+    {
+        return $this->list(productId: $productId);
+    }
+
+    /**
+     * Busca lotes por nombre de producto
+     */
+    public function search(string $query): Collection
+    {
+        return $this->list(search: $query);
+    }
+
+    /**
+     * Crea un nuevo lote de peso
      */
     public function create(array $data): WeightLot
     {
-        // Verificar que el producto sea de tipo 'weight'
-        $product = Product::findOrFail($data['product_id']);
-
-        if ($product->sale_type !== 'weight') {
-            throw new Exception('INVALID_PRODUCT_TYPE');
-        }
-
-        $lot = WeightLot::create($data);
+        $weightLot = WeightLot::create($data);
 
         // Cargar relaciones por defecto
-        $lot->load('product');
+        $weightLot->load(['product']);
 
-        return $lot;
+        return $weightLot;
     }
 
     /**
      * Obtiene un lote específico
      */
-    public function show(WeightLot $lot, ?array $include = null): WeightLot
+    public function show(WeightLot $weightLot, ?array $include = null): WeightLot
     {
         if ($include) {
-            $lot->load($include);
+            $weightLot->load($include);
         } else {
             // Por defecto cargar producto
-            $lot->load('product');
+            $weightLot->load(['product']);
         }
 
-        return $lot;
+        return $weightLot;
     }
 
     /**
-     * Actualiza un lote
+     * Actualiza un lote de peso
      */
-    public function update(WeightLot $lot, array $data): WeightLot
+    public function update(WeightLot $weightLot, array $data): WeightLot
     {
-        $lot->update($data);
+        $weightLot->update($data);
 
-        $lot->load('product');
+        $weightLot->load(['product']);
 
-        return $lot;
+        return $weightLot;
     }
 
     /**
-     * Elimina un lote
+     * Reduce el peso disponible del lote
      */
-    public function delete(WeightLot $lot): void
+    public function reduceWeight(WeightLot $weightLot, float $weight): WeightLot
     {
-        if ($lot->saleItems()->exists()) {
-            throw new Exception('LOT_HAS_SALES');
+        if (!$weightLot->active) {
+            throw new Exception('WEIGHT_LOT_INACTIVE');
         }
 
-        $lot->delete();
+        if ($weightLot->isExpired()) {
+            throw new Exception('WEIGHT_LOT_EXPIRED');
+        }
+
+        if ($weight > $weightLot->available_weight) {
+            throw new Exception('INSUFFICIENT_WEIGHT');
+        }
+
+        $weightLot->reduceWeight($weight);
+        $weightLot->refresh();
+
+        return $weightLot;
+    }
+
+    /**
+     * Elimina un lote de peso
+     */
+    public function delete(WeightLot $weightLot): void
+    {
+        if ($weightLot->saleItems()->exists()) {
+            throw new Exception('WEIGHT_LOT_HAS_SALES');
+        }
+
+        if ($weightLot->inventoryMovements()->exists()) {
+            throw new Exception('WEIGHT_LOT_HAS_MOVEMENTS');
+        }
+
+        $weightLot->delete();
     }
 }
