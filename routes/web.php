@@ -34,16 +34,13 @@ Route::middleware('auth')->group(function () {
     // Inventario
     Route::livewire('/products', 'pages::product.index');
     Route::livewire('/products/create', 'pages::product.create');
-
-    Route::view('/variants', 'variants.index')->name('variants.index');
-
     Route::livewire('/product-variants', 'pages::product-variant.index');
     Route::livewire('/product-variants/create', 'pages::product-variant.create');
-
     Route::livewire('/weight-lots', 'pages::weight-lot.index');
     Route::livewire('/weight-lots/create', 'pages::weight-lot.create');
+    Route::livewire('/inventory/movements', 'pages::inventory.movements');
 
-    Route::view('/inventory/movements', 'inventory.movements')->name('inventory.movements');
+
     Route::view('/inventory/alerts', 'inventory.alerts')->name('inventory.alerts');
 
     // Catálogo
@@ -51,7 +48,8 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/categories/create', 'pages::category.create');
     Route::livewire('/brands', 'pages::brand.index');
     Route::livewire('/brands/create', 'pages::brand.create');
-    Route::view('/taxes', 'taxes.index')->name('taxes.index');
+    Route::livewire('/taxes', 'pages::tax.index');
+    Route::livewire('/taxes/create', 'pages::tax.create');
 
     // Reportes
     Route::livewire('/reports/sales', 'pages::sale.index');
