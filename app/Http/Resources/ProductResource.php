@@ -38,6 +38,19 @@ class ProductResource extends JsonResource
                 fn() => $this->variants->count()
             ),
 
+            // Imágenes
+            'media' => MediaResource::collection($this->whenLoaded('media')),
+            'primary_image' => $this->when(
+                $this->relationLoaded('media'),
+                fn() => $this->primaryImage()
+                    ? new MediaResource($this->primaryImage())
+                    : null
+            ),
+            'images_count' => $this->when(
+                $this->relationLoaded('media'),
+                fn() => $this->media->count()
+            ),
+
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

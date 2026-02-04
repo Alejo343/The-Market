@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
@@ -54,6 +55,37 @@ class Product extends Model
     public function weightLots(): HasMany
     {
         return $this->hasMany(WeightLot::class);
+    }
+
+    /**
+     * Imágenes del producto
+     */
+    public function media(): BelongsToMany
+    {
+        return $this->belongsToMany(Media::class, 'product_media')
+            ->withPivot(['is_primary', 'order'])
+            ->withTimestamps()
+            ->orderByPivot('order');
+    }
+
+    /**
+     * Obtiene la imagen principal del producto
+     */
+    public function primaryImage(): ?Media
+    {
+        return $this->media()
+            ->wherePivot('is_primary', true)
+            ->first();
+    }
+
+    /**
+     * Obtiene todas las imágenes secundarias
+     */
+    public function secondaryImages(): BelongsToMany
+    {
+        return $this->media()
+            ->wherePivot('is_primary', false)
+            ->orderByPivot('order');
     }
 
     /**
