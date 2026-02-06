@@ -29,7 +29,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Evita duplicar la misma imagen en el mismo producto
-            $table->unique(['product_id', 'image_id']);
+            $table->unique(['product_id', 'media_id']);
             $table->index(['product_id', 'is_primary']);
             $table->index(['product_id', 'order']);
         });

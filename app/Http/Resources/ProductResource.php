@@ -42,13 +42,14 @@ class ProductResource extends JsonResource
             'media' => MediaResource::collection($this->whenLoaded('media')),
             'primary_image' => $this->when(
                 $this->relationLoaded('media'),
-                fn() => $this->primaryImage()
-                    ? new MediaResource($this->primaryImage())
-                    : null
+                function () {
+                    $primary = $this->primaryImage();
+                    return $primary ? new MediaResource($primary) : null;
+                }
             ),
-            'images_count' => $this->when(
+            'has_images' => $this->when(
                 $this->relationLoaded('media'),
-                fn() => $this->media->count()
+                fn() => $this->media->count() > 0
             ),
 
             'created_at' => $this->created_at?->toISOString(),

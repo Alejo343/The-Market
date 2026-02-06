@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\InventoryMovementController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductMediaController;
 use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\TaxController;
@@ -44,6 +46,8 @@ Route::get('product-variants/{product_variant}', [ProductVariantController::clas
 //por peso
 Route::get('weight-lots', [WeightLotController::class, 'index']);
 Route::get('weight-lots/{weight_lot}', [WeightLotController::class, 'show']);
+
+
 
 
 // ============================================
@@ -100,4 +104,32 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('inventory-movements', [InventoryMovementController::class, 'index']);
     Route::post('inventory-movements', [InventoryMovementController::class, 'store']);
     Route::get('inventory-movements/{inventory_movement}', [InventoryMovementController::class, 'show']);
+
+
+    Route::get('media', [MediaController::class, 'index']);
+    Route::post('media', [MediaController::class, 'store']);
+    Route::get('media/{media}', [MediaController::class, 'show']);
+    Route::put('media/{media}', [MediaController::class, 'update']);
+    Route::delete('media/{media}', [MediaController::class, 'destroy']);
+
+    // Listar imágenes de un producto
+    Route::get('products/{product}/media', [ProductMediaController::class, 'index']);
+
+    // Subir una imagen
+    Route::post('products/{product}/media', [ProductMediaController::class, 'store']);
+
+    // Subir múltiples imágenes
+    Route::post('products/{product}/media/multiple', [ProductMediaController::class, 'storeMultiple']);
+
+    // Establecer imagen principal
+    Route::post('products/{product}/media/{media}/set-primary', [ProductMediaController::class, 'setPrimary']);
+
+    // Reordenar imágenes
+    Route::post('products/{product}/media/reorder', [ProductMediaController::class, 'reorder']);
+
+    // Eliminar una imagen específica
+    Route::delete('products/{product}/media/{media}', [ProductMediaController::class, 'destroy']);
+
+    // Eliminar todas las imágenes
+    Route::delete('products/{product}/media', [ProductMediaController::class, 'destroyAll']);
 });

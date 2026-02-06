@@ -4,48 +4,33 @@ namespace App\Services;
 
 use App\Models\Media;
 use App\Models\Product;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Exception;
 
 class MediaService
 {
     /**
-     * Sube una imagen y la asocia a un producto
+     * Lista medias con filtros opcionales
      */
-    public function uploadProductImage(
-        Product $product,
-        UploadedFile $file,
-        ?string $alt = null,
-        bool $isPrimary = false,
-        ?int $order = null
-    ): Media {
-        return $this->uploadImage(
-            $file,
-            Media::TYPE_PRODUCT,
-            $alt ?? $product->name,
-            function ($media) use ($product, $isPrimary, $order) {
-                // Si es imagen principal, desmarcar las demás
-                if ($isPrimary) {
-                    $product->media()->updateExistingPivot(
-                        $product->media()->pluck('media.id'),
-                        ['is_primary' => false]
-                    );
-                }
+    public function list(
+        ?string $type = null,
+        ?array $include = null
+    ): Collection {
+        $query = Media::query();
 
-                // Si no se especifica orden, usar el siguiente disponible
-                if ($order === null) {
-                    $order = $product->media()->count();
-                }
+        if ($type) {
+            $query->ofType($type);
+        }
 
-                // Asociar al producto
-                $product->media()->attach($media->id, [
-                    'is_primary' => $isPrimary,
-                    'order' => $order,
-                ]);
-            }
-        );
+        if ($include) {
+            $query->with($include);
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     /**
@@ -113,6 +98,43 @@ class MediaService
     }
 
     /**
+     * Sube una imagen y la asocia a un producto
+     */
+    public function uploadProductImage(
+        Product $product,
+        UploadedFile $file,
+        ?string $alt = null,
+        bool $isPrimary = false,
+        ?int $order = null
+    ): Media {
+        return $this->uploadImage(
+            $file,
+            Media::TYPE_PRODUCT,
+            $alt ?? $product->name,
+            function ($media) use ($product, $isPrimary, $order) {
+                // Si es imagen principal, desmarcar las demás
+                if ($isPrimary) {
+                    $product->media()->updateExistingPivot(
+                        $product->media()->pluck('media.id'),
+                        ['is_primary' => false]
+                    );
+                }
+
+                // Si no se especifica orden, usar el siguiente disponible
+                if ($order === null) {
+                    $order = $product->media()->count();
+                }
+
+                // Asociar al producto
+                $product->media()->attach($media->id, [
+                    'is_primary' => $isPrimary,
+                    'order' => $order,
+                ]);
+            }
+        );
+    }
+
+    /**
      * Sube múltiples imágenes de producto
      */
     public function uploadMultipleProductImages(
@@ -140,12 +162,32 @@ class MediaService
     }
 
     /**
+     * Obtiene un media específico
+     */
+    public function show(Media $media, ?array $include = null): Media
+    {
+        if ($include) {
+            $media->load($include);
+        }
+
+        return $media;
+    }
+
+    /**
+     * Actualiza un media
+     */
+    public function update(Media $media, array $data): Media
+    {
+        $media->update($data);
+        return $media->fresh();
+    }
+
+    /**
      * Actualiza el texto alternativo de una imagen
      */
     public function updateAlt(Media $media, ?string $alt): Media
     {
-        $media->update(['alt' => $alt]);
-        return $media->fresh();
+        return $this->update($media, ['alt' => $alt]);
     }
 
     /**
@@ -157,8 +199,24 @@ class MediaService
             throw new \InvalidArgumentException('Tipo de media no válido');
         }
 
-        $media->update(['type' => $type]);
-        return $media->fresh();
+        return $this->update($media, ['type' => $type]);
+    }
+
+    /**
+     * Elimina un media
+     */
+    public function delete(Media $media): void
+    {
+        // Verificar si está siendo usado
+        if ($media->products()->exists()) {
+            throw new Exception('MEDIA_IN_USE');
+        }
+
+        // Eliminar archivo físico
+        $media->deleteFile();
+
+        // Eliminar registro
+        $media->delete();
     }
 
     /**
@@ -289,14 +347,22 @@ class MediaService
     }
 
     /**
-     * Obtiene todas las imágenes por tipo
+     * Obtiene medias por tipo
      */
-    public function getByType(string $type)
+    public function getByType(string $type): Collection
     {
         if (!in_array($type, Media::getTypes())) {
             throw new \InvalidArgumentException('Tipo de media no válido');
         }
 
-        return Media::ofType($type)->get();
+        return $this->list(type: $type);
+    }
+
+    /**
+     * Obtiene imágenes de productos
+     */
+    public function getProductImages(): Collection
+    {
+        return $this->list(type: Media::TYPE_PRODUCT);
     }
 }

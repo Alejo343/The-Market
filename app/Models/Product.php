@@ -58,7 +58,7 @@ class Product extends Model
     }
 
     /**
-     * Imágenes del producto
+     * Imágenes del producto (relación many-to-many)
      */
     public function media(): BelongsToMany
     {
@@ -71,7 +71,7 @@ class Product extends Model
     /**
      * Obtiene la imagen principal del producto
      */
-    public function primaryImage(): ?Media
+    public function primaryImage()
     {
         return $this->media()
             ->wherePivot('is_primary', true)
@@ -79,13 +79,21 @@ class Product extends Model
     }
 
     /**
-     * Obtiene todas las imágenes secundarias
+     * Obtiene todas las imágenes ordenadas
      */
-    public function secondaryImages(): BelongsToMany
+    public function images(): BelongsToMany
+    {
+        return $this->media()->orderByPivot('order');
+    }
+
+    /**
+     * Verifica si tiene imagen principal
+     */
+    public function hasPrimaryImage(): bool
     {
         return $this->media()
-            ->wherePivot('is_primary', false)
-            ->orderByPivot('order');
+            ->wherePivot('is_primary', true)
+            ->exists();
     }
 
     /**

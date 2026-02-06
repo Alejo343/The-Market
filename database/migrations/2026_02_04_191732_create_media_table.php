@@ -18,6 +18,9 @@ return new class extends Migration
             $table->string('type')->default('product');
             $table->string('alt')->nullable();
             $table->unsignedBigInteger('size');
+
+            // Índice para búsquedas por tipo
+            $table->index('type');
             $table->timestamps();
         });
     }
