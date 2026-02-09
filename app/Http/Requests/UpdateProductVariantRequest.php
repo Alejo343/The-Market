@@ -20,10 +20,17 @@ class UpdateProductVariantRequest extends FormRequest
             'product_id' => ['sometimes', 'required', 'exists:products,id'],
             'presentation' => ['sometimes', 'required', 'string', 'max:255'],
             'sku' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'string',
                 'max:255',
                 Rule::unique('product_variants', 'sku')->ignore($variantId)
+            ],
+            'barcode' => [ // ← AGREGAR
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('product_variants', 'barcode')->ignore($variantId)
             ],
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],

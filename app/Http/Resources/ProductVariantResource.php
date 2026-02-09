@@ -14,6 +14,7 @@ class ProductVariantResource extends JsonResource
             'product_id' => $this->product_id,
             'presentation' => $this->presentation,
             'sku' => $this->sku,
+            'barcode' => $this->barcode,
             'price' => (float) $this->price,
             'sale_price' => $this->sale_price ? (float) $this->sale_price : null,
             'final_price' => (float) ($this->sale_price ?? $this->price),

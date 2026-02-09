@@ -47,8 +47,8 @@ Route::get('product-variants/{product_variant}', [ProductVariantController::clas
 Route::get('weight-lots', [WeightLotController::class, 'index']);
 Route::get('weight-lots/{weight_lot}', [WeightLotController::class, 'show']);
 
-
-
+//Búsqueda por código de barras
+Route::get('product-variants/barcode/search', [ProductVariantController::class, 'findByBarcode']);
 
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
@@ -112,24 +112,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('media/{media}', [MediaController::class, 'update']);
     Route::delete('media/{media}', [MediaController::class, 'destroy']);
 
-    // Listar imágenes de un producto
     Route::get('products/{product}/media', [ProductMediaController::class, 'index']);
-
-    // Subir una imagen
     Route::post('products/{product}/media', [ProductMediaController::class, 'store']);
-
-    // Subir múltiples imágenes
     Route::post('products/{product}/media/multiple', [ProductMediaController::class, 'storeMultiple']);
-
-    // Establecer imagen principal
     Route::post('products/{product}/media/{media}/set-primary', [ProductMediaController::class, 'setPrimary']);
-
-    // Reordenar imágenes
     Route::post('products/{product}/media/reorder', [ProductMediaController::class, 'reorder']);
-
-    // Eliminar una imagen específica
     Route::delete('products/{product}/media/{media}', [ProductMediaController::class, 'destroy']);
-
-    // Eliminar todas las imágenes
     Route::delete('products/{product}/media', [ProductMediaController::class, 'destroyAll']);
 });

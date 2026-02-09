@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained();
 
             $table->string('presentation'); // 500 g, 1 kg, 1 L
-            $table->string('sku')->nullable();
+            $table->string('sku')->unique();;
 
             $table->decimal('price', 10, 2);
             $table->decimal('sale_price', 10, 2)->nullable();

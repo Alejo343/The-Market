@@ -15,6 +15,7 @@ class ProductVariant extends Model
         'product_id',
         'presentation',
         'sku',
+        'barcode',
         'price',
         'sale_price',
         'stock',
@@ -35,6 +36,22 @@ class ProductVariant extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Busca una variante por código de barras
+     */
+    public static function findByBarcode(string $barcode): ?ProductVariant
+    {
+        return self::where('barcode', $barcode)->first();
+    }
+
+    /**
+     * Verifica si tiene código de barras
+     */
+    public function hasBarcode(): bool
+    {
+        return !empty($this->barcode);
     }
 
     /**

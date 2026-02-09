@@ -101,4 +101,24 @@ class ProductVariantController extends Controller
             ], 422);
         }
     }
+
+    public function findByBarcode(Request $request): ProductVariantResource|JsonResponse
+    {
+        $request->validate([
+            'barcode' => ['required', 'string'],
+        ], [
+            'barcode.required' => 'El código de barras es obligatorio',
+        ]);
+
+        $variant = $this->service->findByBarcode($request->input('barcode'));
+
+        if (!$variant) {
+            return response()->json([
+                'message' => 'Producto no encontrado con ese código de barras',
+                'error' => 'product_not_found'
+            ], 404);
+        }
+
+        return new ProductVariantResource($variant);
+    }
 }

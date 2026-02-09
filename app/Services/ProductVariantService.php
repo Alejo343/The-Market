@@ -46,7 +46,8 @@ class ProductVariantService
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('presentation', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('barcode', 'like', "%{$search}%");
             });
         }
 
@@ -111,6 +112,17 @@ class ProductVariantService
     public function search(string $query): Collection
     {
         return $this->list(search: $query);
+    }
+
+    public function findByBarcode(string $barcode): ?ProductVariant
+    {
+        $variant = ProductVariant::where('barcode', $barcode)->first();
+
+        if ($variant) {
+            $variant->load(['product', 'tax']);
+        }
+
+        return $variant;
     }
 
     /**
