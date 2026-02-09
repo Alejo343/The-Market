@@ -1,16 +1,23 @@
 <?php
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Services\ProductService;
+use App\Services\MediaService;
 use App\Services\CategoryService;
 use App\Services\BrandService;
 
 new class extends Component {
+    use WithFileUploads;
     public string $name = '';
     public string $description = '';
     public string $sale_type = 'unit';
     public ?int $category_id = null;
     public ?int $brand_id = null;
     public bool $active = true;
+
+    // Propiedades para imágenes
+    public array $images = [];
+    public int $primaryImageIndex = 0;
 
     /**
      * Obtiene categorías y marcas para los selectores
@@ -26,7 +33,7 @@ new class extends Component {
     /**
      * Crea un nuevo producto
      */
-    public function save(ProductService $productService)
+    public function save(ProductService $productService, MediaService $mediaService)
     {
         $validated = $this->validate(
             [
@@ -36,6 +43,7 @@ new class extends Component {
                 'category_id' => 'required|exists:categories,id',
                 'brand_id' => 'nullable|exists:brands,id',
                 'active' => 'boolean',
+                'images.*' => 'nullable|image|max:2048',
             ],
             [
                 'name.required' => 'El nombre es obligatorio',
@@ -45,13 +53,33 @@ new class extends Component {
                 'category_id.required' => 'La categoría es obligatoria',
                 'category_id.exists' => 'La categoría seleccionada no existe',
                 'brand_id.exists' => 'La marca seleccionada no existe',
+                'images.*.image' => 'El archivo debe ser una imagen',
+                'images.*.max' => 'Cada imagen no puede exceder 2MB',
             ],
         );
 
         try {
-            $productService->create($validated);
+            // Crear el producto
+            $product = $productService->create([
+                'name' => $validated['name'],
+                'description' => $validated['description'],
+                'sale_type' => $validated['sale_type'],
+                'category_id' => $validated['category_id'],
+                'brand_id' => $validated['brand_id'],
+                'active' => $validated['active'],
+            ]);
 
-            session()->flash('success', 'Producto creado exitosamente');
+            // Subir imágenes si existen
+            if (!empty($this->images)) {
+                $mediaService->uploadMultipleProductImages(
+                    $product,
+                    $this->images,
+                    null, // alts
+                    true, // primera imagen es principal
+                );
+            }
+
+            session()->flash('success', 'Producto creado exitosamente con ' . count($this->images) . ' imagen(es)');
             return $this->redirect('/products');
         } catch (\Exception $e) {
             session()->flash('error', 'Error al crear el producto: ' . $e->getMessage());
@@ -176,6 +204,39 @@ new class extends Component {
                 <p class="mt-1 text-sm text-gray-500 ml-6">
                     Los productos inactivos no aparecerán en el punto de venta
                 </p>
+            </div>
+
+            <!-- Images Upload Field -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Imágenes del Producto
+                </label>
+                <input type="file" wire:model="images" multiple accept="image/*"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('images.*') border-red-500 @enderror">
+                @error('images.*')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+                <p class="mt-1 text-sm text-gray-500">
+                    Puedes subir múltiples imágenes. La primera será la imagen principal. Máximo 2MB por imagen.
+                </p>
+
+                <!-- Image Previews -->
+                @if ($images)
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        @foreach ($images as $index => $image)
+                            <div class="relative group" wire:key="preview-{{ $index }}">
+                                <img src="{{ $image->temporaryUrl() }}"
+                                    class="w-full h-32 object-cover rounded-lg border-2 {{ $index === 0 ? 'border-blue-500' : 'border-gray-300' }}">
+                                @if ($index === 0)
+                                    <span
+                                        class="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                                        Principal
+                                    </span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <!-- Form Actions -->

@@ -37,9 +37,9 @@ new class extends Component {
     public function with(ProductService $productService, CategoryService $categoryService, BrandService $brandService): array
     {
         try {
-            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand']);
+            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'media']);
 
-            $products->loadCount(['variants', 'weightLots']);
+            $products->loadCount(['variants', 'weightLots', 'media']);
 
             return [
                 'products' => $products,
@@ -358,6 +358,9 @@ new class extends Component {
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Imagen
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Nombre
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -384,11 +387,34 @@ new class extends Component {
                     @forelse($products as $product)
                         <tr class="hover:bg-gray-50 transition-colors" wire:key="product-{{ $product->id }}">
                             <td class="px-6 py-4">
+                                @php
+                                    $primaryImage = $product->media->where('pivot.is_primary', true)->first();
+                                @endphp
+                                @if ($primaryImage)
+                                    <img src="{{ $primaryImage->url }}" alt="{{ $product->name }}"
+                                        class="w-16 h-16 object-cover rounded-lg border border-gray-200">
+                                @else
+                                    <div
+                                        class="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                @endif
+                                @if ($product->media_count > 1)
+                                    <div class="text-xs text-gray-500 mt-1">+{{ $product->media_count - 1 }} más</div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">
                                     {{ $product->name }}
                                 </div>
                                 @if ($product->description)
-                                    <div class="text-xs text-gray-500">{{ Str::limit($product->description, 50) }}</div>
+                                    <div class="text-xs text-gray-500">{{ Str::limit($product->description, 50) }}
+                                    </div>
                                 @endif
                             </td>
                             <td class="px-6 py-4">
@@ -423,7 +449,8 @@ new class extends Component {
                                     <button wire:click="edit({{ $product->id }})"
                                         class="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                                         title="Editar">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
                                             </path>
@@ -444,7 +471,7 @@ new class extends Component {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                                 @if ($search || $filterCategoryId || $filterBrandId || $filterSaleType)
                                     No se encontraron productos con los filtros aplicados
                                 @else
