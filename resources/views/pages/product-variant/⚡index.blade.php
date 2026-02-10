@@ -4,6 +4,7 @@ use App\Services\ProductVariantService;
 use App\Services\ProductService;
 use App\Services\TaxService;
 use App\Models\ProductVariant;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 
 new class extends Component {
     public string $search = '';
@@ -15,11 +16,13 @@ new class extends Component {
 
     public ?int $editingId = null;
     public ?int $deletingId = null;
+    public ?int $viewingBarcodeId = null;
 
     // Form fields para edición
     public int $product_id = 0;
     public string $presentation = '';
-    public ?string $sku = null;
+    public string $sku = '';
+    public string $barcode = '';
     public string $price = '';
     public ?string $sale_price = null;
     public int $stock = 0;
@@ -118,6 +121,7 @@ new class extends Component {
             $this->product_id = $variant->product_id;
             $this->presentation = $variant->presentation;
             $this->sku = $variant->sku;
+            $this->barcode = $variant->barcode ?? '';
             $this->price = $variant->price;
             $this->sale_price = $variant->sale_price;
             $this->stock = $variant->stock;
@@ -137,7 +141,8 @@ new class extends Component {
         $this->editingId = null;
         $this->product_id = 0;
         $this->presentation = '';
-        $this->sku = null;
+        $this->sku = '';
+        $this->barcode = '';
         $this->price = '';
         $this->sale_price = null;
         $this->stock = 0;
@@ -155,20 +160,23 @@ new class extends Component {
         $this->validate(
             [
                 'product_id' => 'required|exists:products,id',
-                'presentation' => 'required|string|max:100',
-                'sku' => 'nullable|string|max:50',
+                'presentation' => 'required|string|max:255',
+                'sku' => 'required|string|max:255',
+                'barcode' => 'nullable|string|max:255',
                 'price' => 'required|numeric|min:0',
-                'sale_price' => 'nullable|numeric|min:0|lt:price',
+                'sale_price' => 'nullable|sometimes|numeric|min:0|lt:price',
                 'stock' => 'required|integer|min:0',
                 'min_stock' => 'required|integer|min:0',
-                'tax_id' => 'nullable|exists:taxes,id',
+                'tax_id' => 'required|exists:taxes,id',
             ],
             [
                 'product_id.required' => 'El producto es obligatorio',
                 'product_id.exists' => 'El producto seleccionado no existe',
                 'presentation.required' => 'La presentación es obligatoria',
-                'presentation.max' => 'La presentación no puede exceder 100 caracteres',
-                'sku.max' => 'El SKU no puede exceder 50 caracteres',
+                'presentation.max' => 'La presentación no puede exceder 255 caracteres',
+                'sku.required' => 'El SKU es obligatorio',
+                'sku.max' => 'El SKU no puede exceder 255 caracteres',
+                'barcode.max' => 'El código de barras no puede exceder 255 caracteres',
                 'price.required' => 'El precio es obligatorio',
                 'price.numeric' => 'El precio debe ser un número',
                 'price.min' => 'El precio debe ser mayor o igual a 0',
@@ -181,6 +189,7 @@ new class extends Component {
                 'min_stock.required' => 'El stock mínimo es obligatorio',
                 'min_stock.integer' => 'El stock mínimo debe ser un número entero',
                 'min_stock.min' => 'El stock mínimo debe ser mayor o igual a 0',
+                'tax_id.required' => 'El impuesto es obligatorio',
                 'tax_id.exists' => 'El impuesto seleccionado no existe',
             ],
         );
@@ -192,6 +201,7 @@ new class extends Component {
                 'product_id' => $this->product_id,
                 'presentation' => $this->presentation,
                 'sku' => $this->sku,
+                'barcode' => $this->barcode ?: null,
                 'price' => $this->price,
                 'sale_price' => $this->sale_price,
                 'stock' => $this->stock,
@@ -249,6 +259,44 @@ new class extends Component {
     {
         $this->errorMessage = '';
         $this->successMessage = '';
+    }
+
+    /**
+     * Ver código de barras en modal
+     */
+    public function viewBarcode(int $id)
+    {
+        $this->viewingBarcodeId = $id;
+    }
+
+    /**
+     * Cancelar vista de código de barras
+     */
+    public function cancelViewBarcode()
+    {
+        $this->viewingBarcodeId = null;
+    }
+
+    /**
+     * Genera SVG del código de barras usando librería profesional
+     */
+    public function generateBarcodeSvg(string $code): string
+    {
+        if (empty($code)) {
+            return '';
+        }
+
+        try {
+            $generator = new BarcodeGeneratorSVG();
+            return $generator->getBarcode($code, $generator::TYPE_EAN_13);
+        } catch (\Exception $e) {
+            // Si falla EAN-13, intentar CODE128
+            try {
+                return $generator->getBarcode($code, $generator::TYPE_CODE_128);
+            } catch (\Exception $e) {
+                return '';
+            }
+        }
     }
 
     /**
@@ -388,6 +436,9 @@ new class extends Component {
                             SKU
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Código de Barras
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Precio
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -410,6 +461,22 @@ new class extends Component {
                             </td>
                             <td class="px-6 py-4">
                                 <span class="text-sm text-gray-600">{{ $variant->sku ?? '-' }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                @if ($variant->barcode)
+                                    <button wire:click="viewBarcode({{ $variant->id }})"
+                                        class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
+                                            </path>
+                                        </svg>
+                                        Ver código
+                                    </button>
+                                    <div class="text-xs text-gray-500 font-mono">{{ $variant->barcode }}</div>
+                                @else
+                                    <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Sin código</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-gray-900">
@@ -467,7 +534,7 @@ new class extends Component {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                                 @if ($search || $filterProductId || $showLowStockOnly || $showOutOfStockOnly || $showInStockOnly || $showOnSaleOnly)
                                     No se encontraron variantes con los filtros aplicados
                                 @else
@@ -604,6 +671,54 @@ new class extends Component {
                 </div>
             </div>
         </div>
+    @endif
+
+    <!-- Barcode View Modal -->
+    @if ($viewingBarcodeId)
+        @php
+            $viewingVariant = $variants->firstWhere('id', $viewingBarcodeId);
+        @endphp
+        @if ($viewingVariant && $viewingVariant->barcode)
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-lg p-6 max-w-2xl w-full">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Código de Barras</h3>
+                            <p class="text-sm text-gray-600">{{ $viewingVariant->product->name }} -
+                                {{ $viewingVariant->presentation }}</p>
+                        </div>
+                        <button wire:click="cancelViewBarcode" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-6 text-center">
+                        <img src="data:image/svg+xml;base64,{{ base64_encode($this->generateBarcodeSvg($viewingVariant->barcode)) }}"
+                            alt="Código de barras" class="mx-auto mb-4" style="max-width: 400px;">
+                        <p class="text-lg font-mono font-semibold text-gray-900">{{ $viewingVariant->barcode }}</p>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-6 pt-4 border-t">
+                        <div class="text-sm text-gray-600">
+                            <p><strong>SKU:</strong> {{ $viewingVariant->sku }}</p>
+                            <p><strong>Precio:</strong> ${{ number_format($viewingVariant->price, 2) }}</p>
+                        </div>
+                        <a href="data:image/svg+xml;base64,{{ base64_encode($this->generateBarcodeSvg($viewingVariant->barcode)) }}"
+                            download="barcode-{{ $viewingVariant->barcode }}.svg"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Descargar SVG
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
     @endif
 
     <!-- Delete Confirmation Modal -->
