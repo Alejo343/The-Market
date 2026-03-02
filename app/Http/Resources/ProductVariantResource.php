@@ -29,6 +29,15 @@ class ProductVariantResource extends JsonResource
             'product' => new ProductResource($this->whenLoaded('product')),
             'tax' => new TaxResource($this->whenLoaded('tax')),
 
+            // Imagen del producto padre
+            'primary_image' => $this->when(
+                $this->relationLoaded('product') && $this->product->relationLoaded('media'),
+                function () {
+                    $primary = $this->product->primaryImage();
+                    return $primary ? new MediaResource($primary) : null;
+                }
+            ),
+
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

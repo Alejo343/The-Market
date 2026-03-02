@@ -14,6 +14,7 @@ class ProductVariantService
      */
     public function list(
         ?int $productId = null,
+        ?int $categoryId = null,
         bool $lowStockOnly = false,
         bool $outOfStockOnly = false,
         bool $inStockOnly = false,
@@ -25,6 +26,11 @@ class ProductVariantService
 
         if ($productId) {
             $query->where('product_id', $productId);
+        }
+        if ($categoryId) {
+            $query->whereHas('product', function ($q) use ($categoryId) {
+                $q->where('category_id', $categoryId);
+            });
         }
 
         if ($lowStockOnly) {
@@ -52,6 +58,10 @@ class ProductVariantService
         }
 
         if ($include) {
+            // Si piden 'product', cargamos también su media automáticamente
+            if (in_array('product', $include)) {
+                $include[] = 'product.media';
+            }
             $query->with($include);
         }
 

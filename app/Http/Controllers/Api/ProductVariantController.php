@@ -25,6 +25,10 @@ class ProductVariantController extends Controller
             productId: $request->filled('product_id')
                 ? $request->integer('product_id')
                 : null,
+            categoryId: $request->filled('category_id')
+                ? $request->integer('category_id')
+                : null,
+
             lowStockOnly: $request->boolean('low_stock_only'),
             outOfStockOnly: $request->boolean('out_of_stock_only'),
             inStockOnly: $request->boolean('in_stock_only'),

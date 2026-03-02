@@ -11,7 +11,7 @@ new class extends Component {
     public string $sku = '';
     public string $skuPrefix = ''; // Prefijo auto-generado (solo lectura)
     public string $skuValue = ''; // Valor editable por usuario
-    public string $barcode = '';
+    public ?string $barcode = null;
     public bool $showBarcodePreview = false;
     public string $price = '';
     public ?string $sale_price = null;

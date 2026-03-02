@@ -50,6 +50,12 @@ Route::get('weight-lots/{weight_lot}', [WeightLotController::class, 'show']);
 //Búsqueda por código de barras
 Route::get('product-variants/barcode/search', [ProductVariantController::class, 'findByBarcode']);
 
+//imagenes
+Route::get('media', [MediaController::class, 'index']);
+Route::get('media/{media}', [MediaController::class, 'show']);
+
+Route::get('products/{product}/media', [ProductMediaController::class, 'index']);
+
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
 // ============================================
@@ -105,14 +111,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('inventory-movements', [InventoryMovementController::class, 'store']);
     Route::get('inventory-movements/{inventory_movement}', [InventoryMovementController::class, 'show']);
 
-
-    Route::get('media', [MediaController::class, 'index']);
     Route::post('media', [MediaController::class, 'store']);
-    Route::get('media/{media}', [MediaController::class, 'show']);
     Route::put('media/{media}', [MediaController::class, 'update']);
     Route::delete('media/{media}', [MediaController::class, 'destroy']);
 
-    Route::get('products/{product}/media', [ProductMediaController::class, 'index']);
     Route::post('products/{product}/media', [ProductMediaController::class, 'store']);
     Route::post('products/{product}/media/multiple', [ProductMediaController::class, 'storeMultiple']);
     Route::post('products/{product}/media/{media}/set-primary', [ProductMediaController::class, 'setPrimary']);
