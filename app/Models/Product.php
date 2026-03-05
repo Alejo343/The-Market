@@ -18,6 +18,7 @@ class Product extends Model
         'sale_type',
         'category_id',
         'brand_id',
+        'region_id',
         'active',
     ];
 
@@ -39,6 +40,14 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    /**
+     * Región del producto
+     */
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
     }
 
     /**

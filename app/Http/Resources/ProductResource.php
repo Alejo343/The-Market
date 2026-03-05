@@ -29,6 +29,9 @@ class ProductResource extends JsonResource
             'brand_id' => $this->brand_id,
             'brand' => new BrandResource($this->whenLoaded('brand')),
 
+            'region_id' => $this->region_id,
+            'region' => new RegionResource($this->whenLoaded('region')),
+
             // Variantes o lotes según tipo de venta
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
             'weight_lots' => WeightLotResource::collection($this->whenLoaded('weightLots')),

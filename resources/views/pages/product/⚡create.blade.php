@@ -5,6 +5,7 @@ use App\Services\ProductService;
 use App\Services\MediaService;
 use App\Services\CategoryService;
 use App\Services\BrandService;
+use App\Services\RegionService;
 
 new class extends Component {
     use WithFileUploads;
@@ -13,6 +14,7 @@ new class extends Component {
     public string $sale_type = 'unit';
     public ?int $category_id = null;
     public ?int $brand_id = null;
+    public ?int $region_id = null;
     public bool $active = true;
 
     // Propiedades para imágenes
@@ -22,11 +24,12 @@ new class extends Component {
     /**
      * Obtiene categorías y marcas para los selectores
      */
-    public function with(CategoryService $categoryService, BrandService $brandService): array
+    public function with(CategoryService $categoryService, BrandService $brandService, RegionService $regionService): array
     {
         return [
             'categories' => $categoryService->getAll(),
             'brands' => $brandService->getAll(),
+            'regions' => $regionService->getActive(),
         ];
     }
 
@@ -42,6 +45,7 @@ new class extends Component {
                 'sale_type' => 'required|in:unit,weight',
                 'category_id' => 'required|exists:categories,id',
                 'brand_id' => 'nullable|exists:brands,id',
+                'region_id' => 'nullable|exists:regions,id',
                 'active' => 'boolean',
                 'images.*' => 'nullable|image|max:2048',
             ],
@@ -53,6 +57,7 @@ new class extends Component {
                 'category_id.required' => 'La categoría es obligatoria',
                 'category_id.exists' => 'La categoría seleccionada no existe',
                 'brand_id.exists' => 'La marca seleccionada no existe',
+                'region_id.exists' => 'La región seleccionada no existe',
                 'images.*.image' => 'El archivo debe ser una imagen',
                 'images.*.max' => 'Cada imagen no puede exceder 2MB',
             ],
@@ -66,6 +71,7 @@ new class extends Component {
                 'sale_type' => $validated['sale_type'],
                 'category_id' => $validated['category_id'],
                 'brand_id' => $validated['brand_id'],
+                'region_id' => $validated['region_id'],
                 'active' => $validated['active'],
             ]);
 
@@ -170,6 +176,23 @@ new class extends Component {
                         @endforeach
                     </select>
                     @error('brand_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Region Field -->
+                <div>
+                    <label for="region_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Región
+                    </label>
+                    <select id="region_id" wire:model="region_id"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('region_id') border-red-500 @enderror">
+                        <option value="">Sin región</option>
+                        @foreach ($regions as $region)
+                            <option value="{{ $region->id }}">{{ $region->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('region_id')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>

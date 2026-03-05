@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductMediaController;
 use App\Http\Controllers\Api\ProductVariantController;
+use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\TaxController;
 use App\Http\Controllers\Api\UserController;
@@ -30,6 +31,7 @@ Route::get('/categories/{category}', [CategoryController::class, 'show']);
 //Productos
 Route::get('products', [ProductController::class, 'index']);
 Route::get('products/{product}', [ProductController::class, 'show']);
+Route::get('products/{product}/media', [ProductMediaController::class, 'index']);
 
 //Marca
 Route::get('brands', [BrandController::class, 'index']);
@@ -54,7 +56,9 @@ Route::get('product-variants/barcode/search', [ProductVariantController::class, 
 Route::get('media', [MediaController::class, 'index']);
 Route::get('media/{media}', [MediaController::class, 'show']);
 
-Route::get('products/{product}/media', [ProductMediaController::class, 'index']);
+// Rutas públicas
+Route::get('regions', [RegionController::class, 'index']);
+Route::get('regions/{region}', [RegionController::class, 'show']);
 
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
@@ -114,6 +118,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('media', [MediaController::class, 'store']);
     Route::put('media/{media}', [MediaController::class, 'update']);
     Route::delete('media/{media}', [MediaController::class, 'destroy']);
+
+    //Regiones
+    Route::post('regions', [RegionController::class, 'store']);
+    Route::put('regions/{region}', [RegionController::class, 'update']);
+    Route::delete('regions/{region}', [RegionController::class, 'destroy']);
 
     Route::post('products/{product}/media', [ProductMediaController::class, 'store']);
     Route::post('products/{product}/media/multiple', [ProductMediaController::class, 'storeMultiple']);

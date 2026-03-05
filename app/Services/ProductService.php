@@ -14,6 +14,7 @@ class ProductService
     public function list(
         ?int $categoryId = null,
         ?int $brandId = null,
+        ?int $regionId = null,
         ?string $saleType = null,
         bool $activeOnly = false,
         ?string $search = null,
@@ -27,6 +28,10 @@ class ProductService
 
         if ($brandId) {
             $query->where('brand_id', $brandId);
+        }
+
+        if ($regionId) { // ← AGREGAR
+            $query->where('region_id', $regionId);
         }
 
         if ($saleType) {
@@ -73,6 +78,14 @@ class ProductService
     }
 
     /**
+     * Obtiene productos por región
+     */
+    public function getByRegion(int $regionId): Collection
+    {
+        return $this->list(regionId: $regionId);
+    }
+
+    /**
      * Obtiene productos por marca
      */
     public function getByBrand(int $brandId): Collection
@@ -104,7 +117,7 @@ class ProductService
         $product = Product::create($data);
 
         // Cargar relaciones por defecto
-        $product->load(['category', 'brand']);
+        $product->load(['category', 'brand', 'region']);
 
         return $product;
     }
@@ -118,7 +131,7 @@ class ProductService
             $product->load($include);
         } else {
             // Por defecto cargar categoría y marca
-            $product->load(['category', 'brand']);
+            $product->load(['category', 'brand', 'region']);
         }
 
         return $product;
@@ -131,7 +144,7 @@ class ProductService
     {
         $product->update($data);
 
-        $product->load(['category', 'brand']);
+        $product->load(['category', 'brand', 'region']);
 
         return $product;
     }

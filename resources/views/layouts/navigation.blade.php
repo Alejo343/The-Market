@@ -106,6 +106,16 @@
                 Categorías
             </a>
 
+            <a href="/regions" wire:navigate
+                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('regions.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20">
+                    </path>
+                </svg>
+                Regiones
+            </a>
+
             <a href="/brands" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('brands.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

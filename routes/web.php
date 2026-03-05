@@ -34,11 +34,14 @@ Route::middleware('auth')->group(function () {
     // Inventario
     Route::livewire('/products', 'pages::product.index');
     Route::livewire('/products/create', 'pages::product.create');
+
     Route::livewire('/product-variants', 'pages::product-variant.index');
     Route::livewire('/product-variants/create', 'pages::product-variant.create');
     Route::livewire('/weight-lots', 'pages::weight-lot.index');
     Route::livewire('/weight-lots/create', 'pages::weight-lot.create');
     Route::livewire('/inventory/movements', 'pages::inventory.movements');
+    Route::livewire('/regions', 'pages::region.index')->name('regions.index');
+    Route::livewire('/regions/create', 'pages::region.create')->name('regions.create');
 
 
     Route::view('/inventory/alerts', 'inventory.alerts')->name('inventory.alerts');

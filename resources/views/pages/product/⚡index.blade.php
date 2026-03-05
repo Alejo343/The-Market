@@ -37,7 +37,7 @@ new class extends Component {
     public function with(ProductService $productService, CategoryService $categoryService, BrandService $brandService): array
     {
         try {
-            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'media']);
+            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'region', 'media']);
 
             $products->loadCount(['variants', 'weightLots', 'media']);
 
@@ -370,6 +370,9 @@ new class extends Component {
                             Marca
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Región
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Tipo
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -428,6 +431,11 @@ new class extends Component {
                                 </span>
                             </td>
                             <td class="px-6 py-4">
+                                <span class="text-sm text-gray-600">
+                                    {{ $product->region?->name ?? '-' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
                                 <span
                                     class="px-2 py-1 text-xs rounded-full {{ $product->sale_type === 'unit' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
                                     {{ $product->sale_type === 'unit' ? 'Unidad' : 'Peso' }}
@@ -471,7 +479,7 @@ new class extends Component {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="9" class="px-6 py-8 text-center text-gray-500">
                                 @if ($search || $filterCategoryId || $filterBrandId || $filterSaleType)
                                     No se encontraron productos con los filtros aplicados
                                 @else

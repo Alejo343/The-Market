@@ -28,6 +28,9 @@ class ProductController extends Controller
             brandId: $request->filled('brand_id')
                 ? $request->integer('brand_id')
                 : null,
+            regionId: $request->filled('region_id')
+                ? $request->integer('region_id')
+                : null,
             saleType: $request->filled('sale_type')
                 ? $request->input('sale_type')
                 : null,

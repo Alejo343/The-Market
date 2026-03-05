@@ -20,6 +20,7 @@ class StoreProductRequest extends FormRequest
             'sale_type' => ['required', Rule::in(['unit', 'weight'])],
             'category_id' => ['required', 'exists:categories,id'],
             'brand_id' => ['nullable', 'exists:brands,id'],
+            'region_id' => ['nullable', 'exists:regions,id'],
             'active' => ['boolean'],
         ];
     }
@@ -33,6 +34,7 @@ class StoreProductRequest extends FormRequest
             'category_id.required' => 'La categoría es obligatoria',
             'category_id.exists' => 'La categoría seleccionada no existe',
             'brand_id.exists' => 'La marca seleccionada no existe',
+            'region_id.exists' => 'La región seleccionada no existe',
         ];
     }
 }
