@@ -57,11 +57,11 @@ Route::middleware('auth')->group(function () {
     // Reportes
     Route::livewire('/reports/sales', 'pages::sale.index');
 
-    Route::view('/reports/top-products', 'reports.top-products')->name('reports.top-products');
-    Route::view('/reports/inventory', 'reports.inventory')->name('reports.inventory');
-    Route::view('/reports/price-history', 'reports.price-history')->name('reports.price-history');
+    // Route::view('/reports/top-products', 'reports.top-products')->name('reports.top-products');
+    // Route::view('/reports/inventory', 'reports.inventory')->name('reports.inventory');
+    // Route::view('/reports/price-history', 'reports.price-history')->name('reports.price-history');
 
     // Configuración
-    Route::view('/users', 'users.index')->name('users.index');
-    Route::view('/profile', 'profile.edit')->name('profile.edit');
+    // Route::view('/users', 'users.index')->name('users.index');
+    // Route::view('/profile', 'profile.edit')->name('profile.edit');
 });
