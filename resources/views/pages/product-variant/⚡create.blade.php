@@ -7,17 +7,17 @@ use Picqer\Barcode\BarcodeGeneratorSVG;
 
 new class extends Component {
     public int $product_id = 0;
-    public string $presentation = '';
+    public string $presentation = '1 Unidad';
     public string $sku = '';
     public string $skuPrefix = ''; // Prefijo auto-generado (solo lectura)
     public string $skuValue = ''; // Valor editable por usuario
     public ?string $barcode = null;
     public bool $showBarcodePreview = false;
-    public string $price = '';
+    public string $price = '5000';
     public ?string $sale_price = null;
-    public int $stock = 0;
-    public int $min_stock = 10;
-    public ?int $tax_id = null;
+    public int $stock = 5;
+    public int $min_stock = 3;
+    public ?int $tax_id = 1;
 
     /**
      * Genera un código de barras EAN-13 aleatorio o muestra el existente
@@ -100,11 +100,20 @@ new class extends Component {
                 // Generar prefijo
                 $this->skuPrefix = "{$category}-{$brand}-{$type}-";
 
+                // Iniciales si tiene varias palabras, sino 3 primeras letras
+                $words = explode(' ', trim($product->name));
+                if (count($words) > 1) {
+                    $this->skuValue = strtoupper(implode('', array_map(fn($w) => $w[0], $words)));
+                } else {
+                    $this->skuValue = strtoupper(substr($product->name, 0, 3));
+                }
+
                 // Actualizar SKU completo
                 $this->updateFullSku();
             }
         } else {
             $this->skuPrefix = '';
+            $this->skuValue = '';
             $this->updateFullSku();
         }
     }
@@ -184,7 +193,7 @@ new class extends Component {
             $variantService->create($validated);
 
             session()->flash('success', 'Variante creada exitosamente');
-            return $this->redirect('/product-variants');
+            // return $this->redirect('/product-variants');
         } catch (\Exception $e) {
             $errorMessage = match ($e->getMessage()) {
                 'INVALID_PRODUCT_TYPE' => 'El producto debe ser de tipo "unidad" para tener variantes',
