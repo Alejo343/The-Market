@@ -151,8 +151,8 @@
                 Ventas por Período
             </a>
 
-            <a href="{{ route('reports.top-products') }}"
-                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('reports.top-products') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+            <a href=#
+                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
@@ -160,8 +160,8 @@
                 Productos Más Vendidos
             </a>
 
-            <a href="{{ route('reports.inventory') }}"
-                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('reports.inventory') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+            <a href=#
+                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
@@ -170,8 +170,8 @@
                 Inventario Actual
             </a>
 
-            <a href="{{ route('reports.price-history') }}"
-                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('reports.price-history') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+            <a href=#
+                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -194,8 +194,8 @@
                 Usuarios
             </a>
 
-            <a href="{{ route('profile.edit') }}"
-                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('profile.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+            <a href=#
+                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
