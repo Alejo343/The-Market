@@ -19,7 +19,7 @@ new class extends Component {
 
     // Propiedades para imágenes
     public array $images = [];
-    public int $primaryImageIndex = 0;
+    public array $imageOrder = [];
 
     /**
      * Obtiene categorías y marcas para los selectores
@@ -75,14 +75,11 @@ new class extends Component {
                 'active' => $validated['active'],
             ]);
 
-            // Subir imágenes si existen
+            // Subir imágenes en el orden definido por el usuario
             if (!empty($this->images)) {
-                $mediaService->uploadMultipleProductImages(
-                    $product,
-                    $this->images,
-                    null, // alts
-                    true, // primera imagen es principal
-                );
+                $orderedImages = !empty($this->imageOrder) ? array_map(fn($i) => $this->images[$i], $this->imageOrder) : array_values($this->images);
+
+                $mediaService->uploadMultipleProductImages($product, $orderedImages, null, true);
             }
 
             session()->flash('success', 'Producto creado exitosamente con ' . count($this->images) . ' imagen(es)');
@@ -90,6 +87,32 @@ new class extends Component {
         } catch (\Exception $e) {
             session()->flash('error', 'Error al crear el producto: ' . $e->getMessage());
         }
+    }
+
+    public function removeImage(int $orderPosition): void
+    {
+        $realIndex = $this->imageOrder[$orderPosition] ?? null;
+        if ($realIndex === null) {
+            return;
+        }
+
+        array_splice($this->imageOrder, $orderPosition, 1);
+
+        $this->imageOrder = array_values(array_map(fn($i) => $i > $realIndex ? $i - 1 : $i, $this->imageOrder));
+
+        $images = $this->images;
+        array_splice($images, $realIndex, 1);
+        $this->images = array_values($images);
+    }
+
+    public function reorderImages(array $newOrder): void
+    {
+        $this->imageOrder = array_map('intval', $newOrder);
+    }
+
+    public function updatedImages(): void
+    {
+        $this->imageOrder = array_keys($this->images);
     }
 
     /**
@@ -152,15 +175,10 @@ new class extends Component {
                     <select id="category_id" wire:model="category_id"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('category_id') border-red-500 @enderror">
                         <option value="">Seleccionar categoría</option>
-                        @php
-                            $parents = $categories->whereNull('parent_id')->sortBy('name');
-                            $children = $categories->whereNotNull('parent_id')->groupBy('parent_id');
-                        @endphp
-                        @foreach ($parents as $parent)
-                            <option value="{{ $parent->id }}">{{ $parent->name }}</option>
-                            @foreach ($children->get($parent->id, collect())->sortBy('name') as $child)
-                                <option value="{{ $child->id }}">　└─ {{ $child->name }}</option>
-                            @endforeach
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}">
+                                {{ $category->parent ? '└─ ' : '' }}{{ $category->name }}
+                            </option>
                         @endforeach
                     </select>
                     @error('category_id')
@@ -239,28 +257,73 @@ new class extends Component {
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                     Imágenes del Producto
                 </label>
-                <input type="file" wire:model="images" multiple accept="image/*"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('images.*') border-red-500 @enderror">
-                @error('images.*')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-                <p class="mt-1 text-sm text-gray-500">
-                    Puedes subir múltiples imágenes. La primera será la imagen principal. Máximo 2MB por imagen.
-                </p>
 
-                <!-- Image Previews -->
+                {{-- Zona de drop / selector --}}
+                <label for="images-input"
+                    class="flex flex-col items-center justify-center gap-2 w-full px-6 py-8 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:border-blue-400 hover:bg-blue-50 transition-colors @error('images.*') border-red-400 @enderror">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Arrastra imágenes aquí</span>
+                    <span class="text-xs text-gray-400">o haz clic para seleccionar archivos</span>
+                    <span class="mt-1 text-xs text-gray-400 bg-white border border-gray-200 rounded-md px-3 py-1">
+                        PNG, JPG, WEBP — Máx. 2MB por imagen
+                    </span>
+                    <input id="images-input" type="file" wire:model="images" multiple accept="image/*"
+                        class="hidden">
+                </label>
+
+                @error('images.*')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+
+                {{-- Previews con drag & drop --}}
                 @if ($images)
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        @foreach ($images as $index => $image)
-                            <div class="relative group" wire:key="preview-{{ $index }}">
-                                <img src="{{ $image->temporaryUrl() }}"
-                                    class="w-full h-32 object-cover rounded-lg border-2 {{ $index === 0 ? 'border-blue-500' : 'border-gray-300' }}">
-                                @if ($index === 0)
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3" id="images-sortable" x-data="imagesSorter()"
+                        x-init="init()">
+                        @foreach ($imageOrder as $position => $realIndex)
+                            @php $image = $images[$realIndex]; @endphp
+                            <div class="relative group cursor-grab active:cursor-grabbing rounded-lg overflow-hidden"
+                                style="aspect-ratio: 1;" wire:key="preview-{{ $realIndex }}"
+                                data-index="{{ $realIndex }}">
+                                <img src="{{ $image->temporaryUrl() }}" class="w-full h-full object-cover">
+
+                                {{-- Borde azul si es principal --}}
+                                <div
+                                    class="absolute inset-0 rounded-lg pointer-events-none
+                                    {{ $position === 0 ? 'ring-2 ring-blue-500' : 'ring-1 ring-black/10' }}">
+                                </div>
+
+                                {{-- Badge principal --}}
+                                @if ($position === 0)
                                     <span
-                                        class="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                                        class="absolute top-1.5 left-1.5 bg-blue-600 text-white text-xs font-medium px-2 py-0.5 rounded">
                                         Principal
                                     </span>
                                 @endif
+
+                                {{-- Botón eliminar --}}
+                                <button type="button" wire:click="removeImage({{ $position }})"
+                                    class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-700 hover:bg-red-800 flex items-center justify-center transition-colors shadow"
+                                    title="Eliminar">
+                                    <svg class="w-3 h-3 text-red-100" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+
+                                {{-- Hint arrastre --}}
+                                <div
+                                    class="absolute bottom-0 inset-x-0 bg-black/40 py-1 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20" />
+                                    </svg>
+                                    <span class="text-xs text-white">Arrastra</span>
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -276,13 +339,37 @@ new class extends Component {
                 <button type="submit"
                     class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                        </path>
                     </svg>
                     Crear Producto
                 </button>
             </div>
         </form>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script>
+        function imagesSorter() {
+            return {
+                init() {
+                    this.$nextTick(() => {
+                        const el = document.getElementById('images-sortable');
+                        if (!el) return;
+                        Sortable.create(el, {
+                            animation: 150,
+                            ghostClass: 'opacity-40',
+                            onEnd: () => {
+                                const newOrder = [...el.querySelectorAll('[data-index]')]
+                                    .map(el => parseInt(el.dataset.index));
+                                @this.reorderImages(newOrder);
+                            }
+                        });
+                    });
+                }
+            }
+        }
+    </script>
 
     <!-- Help Text -->
     <div class="mt-6 max-w-3xl bg-blue-50 border border-blue-200 rounded-lg p-4">
