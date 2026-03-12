@@ -454,6 +454,17 @@ new class extends Component {
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2" wire:key="action-buttons-{{ $product->id }}">
+                                    @if ($product->sale_type === 'unit')
+                                        <a href="{{ route('product-variants.create', ['product_id' => $product->id]) }}"
+                                            class="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                            title="Agregar variante">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </a>
+                                    @endif
                                     <button wire:click="edit({{ $product->id }})"
                                         class="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                                         title="Editar">

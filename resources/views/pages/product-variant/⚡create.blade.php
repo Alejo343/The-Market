@@ -211,6 +211,19 @@ new class extends Component {
         return $this->redirect('/variants');
     }
 
+    /**
+     * Summary of mount
+     * @return void
+     */
+    public function mount(): void
+    {
+        $productId = request()->query('product_id');
+        if ($productId && is_numeric($productId)) {
+            $this->product_id = (int) $productId;
+            $this->updatedProductId();
+        }
+    }
+
     public function render()
     {
         return $this->view();

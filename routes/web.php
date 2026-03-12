@@ -36,7 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/products/create', 'pages::product.create');
 
     Route::livewire('/product-variants', 'pages::product-variant.index');
-    Route::livewire('/product-variants/create', 'pages::product-variant.create');
+    Route::livewire('/product-variants/create', 'pages::product-variant.create')->name('product-variants.create');
     Route::livewire('/weight-lots', 'pages::weight-lot.index');
     Route::livewire('/weight-lots/create', 'pages::weight-lot.create');
     Route::livewire('/inventory/movements', 'pages::inventory.movements');
