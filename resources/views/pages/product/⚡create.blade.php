@@ -152,10 +152,15 @@ new class extends Component {
                     <select id="category_id" wire:model="category_id"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('category_id') border-red-500 @enderror">
                         <option value="">Seleccionar categoría</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}">
-                                {{ $category->parent ? '└─ ' : '' }}{{ $category->name }}
-                            </option>
+                        @php
+                            $parents = $categories->whereNull('parent_id')->sortBy('name');
+                            $children = $categories->whereNotNull('parent_id')->groupBy('parent_id');
+                        @endphp
+                        @foreach ($parents as $parent)
+                            <option value="{{ $parent->id }}">{{ $parent->name }}</option>
+                            @foreach ($children->get($parent->id, collect())->sortBy('name') as $child)
+                                <option value="{{ $child->id }}">　└─ {{ $child->name }}</option>
+                            @endforeach
                         @endforeach
                     </select>
                     @error('category_id')
@@ -282,7 +287,8 @@ new class extends Component {
     <!-- Help Text -->
     <div class="mt-6 max-w-3xl bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div class="flex items-start gap-3">
-            <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
