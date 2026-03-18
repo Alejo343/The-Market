@@ -51,9 +51,9 @@ class ProductVariantService
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('presentation', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
+                $q->whereRaw('unaccent(presentation) ilike unaccent(?)', ["%{$search}%"])
+                    ->orWhereRaw('unaccent(sku) ilike unaccent(?)', ["%{$search}%"])
+                    ->orWhereRaw('unaccent(barcode) ilike unaccent(?)', ["%{$search}%"]);
             });
         }
 

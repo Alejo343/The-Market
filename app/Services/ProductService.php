@@ -47,7 +47,7 @@ class ProductService
         }
 
         if ($search) {
-            $query->where('name', 'ilike', "%{$search}%");
+            $query->whereRaw('unaccent(name) ilike unaccent(?)', ["%{$search}%"]);
         }
 
         if ($include) {
@@ -89,7 +89,10 @@ class ProductService
 
     public function search(string $query): Collection
     {
-        return Product::query()->where('name', 'like', "%{$query}%")->orderBy('name')->get();
+        return Product::query()
+            ->whereRaw('unaccent(name) ilike unaccent(?)', ["%{$query}%"])
+            ->orderBy('name')
+            ->get();
     }
 
     /**
