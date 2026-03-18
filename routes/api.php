@@ -58,8 +58,8 @@ Route::get('media/{media}', [MediaController::class, 'show']);
 
 // Rutas públicas
 Route::get('regions', [RegionController::class, 'index']);
-Route::get('regions/{region}', [RegionController::class, 'show']);
-Route::get('regions/{region}/variants', [RegionController::class, 'variants']); // ← nueva
+Route::get('regions/{region}/variants', [RegionController::class, 'variants']); // ← antes
+Route::get('regions/{region}', [RegionController::class, 'show']);              // ← después
 
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
