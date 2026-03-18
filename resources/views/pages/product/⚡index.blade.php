@@ -820,7 +820,7 @@ new class extends Component {
                         </label>
 
                         @if (count($existingMedia) > 0)
-                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            <div class="grid gap-3" style="grid-template-columns: repeat(2, 1fr);">
                                 @foreach ($existingMedia as $media)
                                     <div class="relative group" wire:key="existing-{{ $media['id'] }}"
                                         style="aspect-ratio:1;">
