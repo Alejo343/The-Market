@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\ProductVariantResource;
+use App\Models\ProductVariant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRegionRequest;
 use App\Http\Requests\UpdateRegionRequest;
@@ -35,6 +37,20 @@ class RegionController extends Controller
         );
 
         return RegionResource::collection($regions);
+    }
+
+    /**
+     * Lista todas las variantes de productos pertenecientes a la región.
+     */
+    public function variants(Request $request, Region $region): AnonymousResourceCollection
+    {
+        $variants = ProductVariant::whereHas('product', function ($query) use ($region) {
+            $query->where('region_id', $region->id);
+        })
+            ->with(['product.media', 'tax'])
+            ->paginate($request->integer('per_page', 15));
+
+        return ProductVariantResource::collection($variants);
     }
 
     /**
