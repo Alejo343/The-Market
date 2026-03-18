@@ -1,16 +1,23 @@
 <?php
 use Livewire\Component;
+use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use App\Services\ProductService;
 use App\Services\CategoryService;
 use App\Services\BrandService;
+use App\Services\RegionService;
+use App\Services\MediaService;
 use App\Models\Product;
 
 new class extends Component {
+    use WithPagination, WithFileUploads;
+
     public string $search = '';
     public ?int $filterCategoryId = null;
     public ?int $filterBrandId = null;
     public ?string $filterSaleType = null;
     public bool $showActiveOnly = false;
+    public int $perPage = 15;
 
     public ?int $editingId = null;
     public ?int $deletingId = null;
@@ -21,7 +28,13 @@ new class extends Component {
     public string $sale_type = 'unit';
     public ?int $category_id = null;
     public ?int $brand_id = null;
+    public ?int $region_id = null;
     public bool $active = true;
+
+    // Imágenes existentes del producto
+    public array $existingMedia = [];
+    // Nuevas imágenes a subir
+    public array $newImages = [];
 
     public string $errorMessage = '';
     public string $successMessage = '';
@@ -34,17 +47,18 @@ new class extends Component {
     /**
      * Computed property para obtener los productos filtrados
      */
-    public function with(ProductService $productService, CategoryService $categoryService, BrandService $brandService): array
+    public function with(ProductService $productService, CategoryService $categoryService, BrandService $brandService, RegionService $regionService): array
     {
         try {
-            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'region', 'media']);
+            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'region', 'media'], perPage: $this->perPage);
 
-            $products->loadCount(['variants', 'weightLots', 'media']);
+            $products->getCollection()->loadCount(['variants', 'weightLots', 'media']);
 
             return [
                 'products' => $products,
                 'categories' => $categoryService->getAll(),
                 'brands' => $brandService->getAll(),
+                'regions' => $regionService->getActive(),
             ];
         } catch (\Exception $e) {
             \Log::error('Error in with(): ' . $e->getMessage());
@@ -53,6 +67,7 @@ new class extends Component {
                 'products' => collect(),
                 'categories' => collect(),
                 'brands' => collect(),
+                'regions' => collect(),
             ];
         }
     }
@@ -62,27 +77,37 @@ new class extends Component {
      */
     public function updatedSearch()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedFilterCategoryId()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedFilterBrandId()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedFilterSaleType()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedShowActiveOnly()
     {
+        $this->resetPage();
         $this->resetMessages();
+    }
+
+    public function updatedPerPage()
+    {
+        $this->resetPage();
     }
 
     /**
@@ -95,6 +120,7 @@ new class extends Component {
         $this->filterBrandId = null;
         $this->filterSaleType = null;
         $this->showActiveOnly = false;
+        $this->resetPage();
         $this->resetMessages();
     }
 
@@ -105,15 +131,30 @@ new class extends Component {
     {
         $this->resetMessages();
         $this->editingId = $id;
+        $this->newImages = [];
 
         try {
-            $product = Product::findOrFail($id);
+            $product = Product::with('media')->findOrFail($id);
             $this->name = $product->name;
             $this->description = $product->description ?? '';
             $this->sale_type = $product->sale_type;
             $this->category_id = $product->category_id;
             $this->brand_id = $product->brand_id;
+            $this->region_id = $product->region_id;
             $this->active = $product->active;
+
+            // Cargar imágenes existentes como array serializable
+            $this->existingMedia = $product->media
+                ->map(
+                    fn($m) => [
+                        'id' => $m->id,
+                        'url' => $m->url,
+                        'filename' => $m->filename,
+                        'is_primary' => (bool) $m->pivot->is_primary,
+                    ],
+                )
+                ->values()
+                ->toArray();
         } catch (\Exception $e) {
             $this->errorMessage = 'Error al cargar el producto';
             $this->cancelEdit();
@@ -131,13 +172,69 @@ new class extends Component {
         $this->sale_type = 'unit';
         $this->category_id = null;
         $this->brand_id = null;
+        $this->region_id = null;
         $this->active = true;
+        $this->existingMedia = [];
+        $this->newImages = [];
+    }
+
+    /**
+     * Elimina una imagen existente del producto
+     */
+    public function removeExistingMedia(int $mediaId, MediaService $mediaService)
+    {
+        try {
+            $product = Product::findOrFail($this->editingId);
+            $media = \App\Models\Media::findOrFail($mediaId);
+            $mediaService->deleteProductImage($product, $media);
+
+            $this->existingMedia = collect($this->existingMedia)->reject(fn($m) => $m['id'] === $mediaId)->values()->toArray();
+
+            // Si se eliminó la principal y quedan imágenes, promover la primera
+            $hasPrimary = collect($this->existingMedia)->contains('is_primary', true);
+            if (!$hasPrimary && count($this->existingMedia) > 0) {
+                $this->setPrimaryMedia($this->existingMedia[0]['id'], $mediaService);
+            }
+        } catch (\Exception $e) {
+            $this->errorMessage = 'Error al eliminar la imagen';
+        }
+    }
+
+    /**
+     * Establece una imagen existente como principal
+     */
+    public function setPrimaryMedia(int $mediaId, MediaService $mediaService)
+    {
+        try {
+            $product = Product::findOrFail($this->editingId);
+            $media = \App\Models\Media::findOrFail($mediaId);
+            $mediaService->setPrimaryImage($product, $media);
+
+            $this->existingMedia = collect($this->existingMedia)
+                ->map(function ($m) use ($mediaId) {
+                    $m['is_primary'] = $m['id'] === $mediaId;
+                    return $m;
+                })
+                ->toArray();
+        } catch (\Exception $e) {
+            $this->errorMessage = 'Error al cambiar la imagen principal';
+        }
+    }
+
+    /**
+     * Elimina una nueva imagen (aún no subida) de la cola
+     */
+    public function removeNewImage(int $index)
+    {
+        $images = $this->newImages;
+        array_splice($images, $index, 1);
+        $this->newImages = array_values($images);
     }
 
     /**
      * Guarda el producto editado
      */
-    public function save(ProductService $productService)
+    public function save(ProductService $productService, MediaService $mediaService)
     {
         $this->resetMessages();
 
@@ -148,7 +245,9 @@ new class extends Component {
                 'sale_type' => 'required|in:unit,weight',
                 'category_id' => 'required|exists:categories,id',
                 'brand_id' => 'nullable|exists:brands,id',
+                'region_id' => 'nullable|exists:regions,id',
                 'active' => 'boolean',
+                'newImages.*' => 'nullable|image|max:2048',
             ],
             [
                 'name.required' => 'El nombre es obligatorio',
@@ -158,6 +257,9 @@ new class extends Component {
                 'category_id.required' => 'La categoría es obligatoria',
                 'category_id.exists' => 'La categoría seleccionada no existe',
                 'brand_id.exists' => 'La marca seleccionada no existe',
+                'region_id.exists' => 'La región seleccionada no existe',
+                'newImages.*.image' => 'El archivo debe ser una imagen',
+                'newImages.*.max' => 'Cada imagen no puede exceder 2MB',
             ],
         );
 
@@ -170,8 +272,15 @@ new class extends Component {
                 'sale_type' => $this->sale_type,
                 'category_id' => $this->category_id,
                 'brand_id' => $this->brand_id,
+                'region_id' => $this->region_id,
                 'active' => $this->active,
             ]);
+
+            // Subir nuevas imágenes si las hay
+            if (!empty($this->newImages)) {
+                $noPrimaryYet = collect($this->existingMedia)->doesntContain('is_primary', true);
+                $mediaService->uploadMultipleProductImages($product, array_values($this->newImages), null, $noPrimaryYet);
+            }
 
             $this->successMessage = 'Producto actualizado exitosamente';
             $this->cancelEdit();
@@ -333,10 +442,24 @@ new class extends Component {
                 <span class="text-sm text-gray-700">Solo productos activos</span>
             </label>
 
-            <button wire:click="clearFilters"
-                class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                Limpiar filtros
-            </button>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600">Mostrar</label>
+                    <select wire:model.live="perPage"
+                        class="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span class="text-sm text-gray-600">por página</span>
+                </div>
+
+                <button wire:click="clearFilters"
+                    class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                    Limpiar filtros
+                </button>
+            </div>
         </div>
     </div>
 
@@ -502,105 +625,300 @@ new class extends Component {
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        @if ($products instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-4">
+                <!-- Contador -->
+                <div class="text-sm text-gray-500">
+                    @if ($products->total() > 0)
+                        Mostrando <span class="font-medium text-gray-700">{{ $products->firstItem() }}</span>–<span
+                            class="font-medium text-gray-700">{{ $products->lastItem() }}</span>
+                        de <span class="font-medium text-gray-700">{{ $products->total() }}</span> productos
+                    @else
+                        Sin resultados
+                    @endif
+                </div>
+
+                <!-- Botones de página -->
+                @if ($products->hasPages())
+                    <div class="flex items-center gap-1">
+                        {{-- Anterior --}}
+                        @if ($products->onFirstPage())
+                            <span
+                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed select-none">
+                                ‹
+                            </span>
+                        @else
+                            <button wire:click="previousPage" wire:loading.attr="disabled"
+                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                                ‹
+                            </button>
+                        @endif
+
+                        {{-- Páginas --}}
+                        @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
+                            @if ($page == $products->currentPage())
+                                <span
+                                    class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg select-none">
+                                    {{ $page }}
+                                </span>
+                            @elseif ($page == 1 || $page == $products->lastPage() || abs($page - $products->currentPage()) <= 2)
+                                <button wire:click="gotoPage({{ $page }})"
+                                    class="px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                                    {{ $page }}
+                                </button>
+                            @elseif (abs($page - $products->currentPage()) == 3)
+                                <span class="px-2 py-1.5 text-sm text-gray-400 select-none">…</span>
+                            @endif
+                        @endforeach
+
+                        {{-- Siguiente --}}
+                        @if ($products->hasMorePages())
+                            <button wire:click="nextPage" wire:loading.attr="disabled"
+                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                                ›
+                            </button>
+                        @else
+                            <span
+                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed select-none">
+                                ›
+                            </span>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        @endif
     </div>
 
     <!-- Edit Modal -->
     @if ($editingId)
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Editar Producto</h3>
+        <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[92vh] flex flex-col">
 
-                <div class="space-y-4">
-                    <!-- Name -->
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+                    <h3 class="text-lg font-semibold text-gray-900">Editar Producto</h3>
+                    <button wire:click="cancelEdit" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Modal Body (scrollable) -->
+                <div class="overflow-y-auto px-6 py-5 space-y-5 flex-1">
+
+                    <!-- Nombre -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Nombre <span class="text-red-600">*</span>
+                            Nombre <span class="text-red-500">*</span>
                         </label>
                         <input type="text" wire:model="name"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('name') border-red-400 @enderror">
                         @error('name')
-                            <span class="text-xs text-red-600">{{ $message }}</span>
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <!-- Description -->
+                    <!-- Descripción -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
                         <textarea wire:model="description" rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none @error('description') border-red-400 @enderror"></textarea>
                         @error('description')
-                            <span class="text-xs text-red-600">{{ $message }}</span>
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
+                    <!-- Grid 2 col -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Category -->
+
+                        <!-- Categoría -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Categoría <span class="text-red-600">*</span>
+                                Categoría <span class="text-red-500">*</span>
                             </label>
                             <select wire:model="category_id"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('category_id') border-red-400 @enderror">
                                 <option value="">Seleccionar categoría</option>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    <option value="{{ $category->id }}">
+                                        {{ $category->parent ? '└─ ' : '' }}{{ $category->name }}
+                                    </option>
                                 @endforeach
                             </select>
                             @error('category_id')
-                                <span class="text-xs text-red-600">{{ $message }}</span>
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <!-- Brand -->
+                        <!-- Marca -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
                             <select wire:model="brand_id"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('brand_id') border-red-400 @enderror">
                                 <option value="">Sin marca</option>
                                 @foreach ($brands as $brand)
                                     <option value="{{ $brand->id }}">{{ $brand->name }}</option>
                                 @endforeach
                             </select>
                             @error('brand_id')
-                                <span class="text-xs text-red-600">{{ $message }}</span>
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <!-- Sale Type -->
+                        <!-- Región -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Región</label>
+                            <select wire:model="region_id"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('region_id') border-red-400 @enderror">
+                                <option value="">Sin región</option>
+                                @foreach ($regions as $region)
+                                    <option value="{{ $region->id }}">{{ $region->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('region_id')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Tipo de Venta -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Tipo de Venta <span class="text-red-600">*</span>
+                                Tipo de Venta <span class="text-red-500">*</span>
                             </label>
                             <select wire:model="sale_type"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('sale_type') border-red-400 @enderror">
                                 <option value="unit">Unidad</option>
                                 <option value="weight">Peso</option>
                             </select>
                             @error('sale_type')
-                                <span class="text-xs text-red-600">{{ $message }}</span>
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
-
-                        <!-- Active -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                            <label class="flex items-center gap-2 cursor-pointer mt-2">
-                                <input type="checkbox" wire:model="active"
-                                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <span class="text-sm text-gray-700">Producto activo</span>
-                            </label>
-                        </div>
                     </div>
+
+                    <!-- Estado -->
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer w-fit">
+                            <input type="checkbox" wire:model="active"
+                                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Producto activo</span>
+                        </label>
+                        <p class="mt-1 text-xs text-gray-500 ml-6">Los productos inactivos no aparecen en el punto de
+                            venta</p>
+                    </div>
+
+                    <!-- Imágenes existentes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Imágenes actuales
+                            <span class="text-xs font-normal text-gray-400 ml-1">(haz clic en una para hacerla
+                                principal)</span>
+                        </label>
+
+                        @if (count($existingMedia) > 0)
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                @foreach ($existingMedia as $media)
+                                    <div class="relative group" wire:key="existing-{{ $media['id'] }}"
+                                        style="aspect-ratio:1;">
+                                        <img src="{{ $media['url'] }}" alt=""
+                                            class="w-full h-full object-cover rounded-lg border-2 transition-all cursor-pointer
+                                                   {{ $media['is_primary'] ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200 hover:border-blue-300' }}"
+                                            wire:click="setPrimaryMedia({{ $media['id'] }})"
+                                            title="{{ $media['is_primary'] ? 'Imagen principal' : 'Establecer como principal' }}">
+
+                                        {{-- Badge principal --}}
+                                        @if ($media['is_primary'])
+                                            <span
+                                                class="absolute top-1.5 left-1.5 bg-blue-600 text-white text-xs font-medium px-1.5 py-0.5 rounded shadow">
+                                                Principal
+                                            </span>
+                                        @endif
+
+                                        {{-- Botón eliminar --}}
+                                        <button type="button" wire:click="removeExistingMedia({{ $media['id'] }})"
+                                            wire:confirm="¿Eliminar esta imagen?"
+                                            class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Eliminar">
+                                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-sm text-gray-400 italic">Sin imágenes cargadas</p>
+                        @endif
+                    </div>
+
+                    <!-- Agregar nuevas imágenes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Agregar imágenes</label>
+
+                        <label for="new-images-input"
+                            class="flex flex-col items-center justify-center gap-1.5 w-full px-4 py-5 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                            <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                            </svg>
+                            <span class="text-sm text-gray-600 font-medium">Arrastra o selecciona imágenes</span>
+                            <span class="text-xs text-gray-400">PNG, JPG, WEBP · Máx. 2MB por imagen</span>
+                            <input id="new-images-input" type="file" wire:model="newImages" multiple
+                                accept="image/*" class="hidden">
+                        </label>
+
+                        @error('newImages.*')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+
+                        {{-- Preview nuevas imágenes --}}
+                        @if (count($newImages) > 0)
+                            <div class="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                @foreach ($newImages as $i => $img)
+                                    <div class="relative group" style="aspect-ratio:1;"
+                                        wire:key="new-img-{{ $i }}">
+                                        <img src="{{ $img->temporaryUrl() }}"
+                                            class="w-full h-full object-cover rounded-lg border border-gray-200">
+                                        <span
+                                            class="absolute top-1.5 left-1.5 bg-gray-700/80 text-white text-xs px-1.5 py-0.5 rounded">Nueva</span>
+                                        <button type="button" wire:click="removeNewImage({{ $i }})"
+                                            class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
                 </div>
 
-                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                <!-- Modal Footer -->
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 shrink-0">
                     <button wire:click="cancelEdit"
-                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                        class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                         Cancelar
                     </button>
-                    <button wire:click="save"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Guardar
+                    <button wire:click="save" wire:loading.attr="disabled" wire:target="save"
+                        class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2 disabled:opacity-60">
+                        <svg wire:loading wire:target="save" class="w-4 h-4 animate-spin" fill="none"
+                            viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                stroke-width="4" />
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                        </svg>
+                        Guardar cambios
                     </button>
                 </div>
             </div>

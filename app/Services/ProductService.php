@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+
 use Exception;
 
 class ProductService
@@ -11,6 +13,7 @@ class ProductService
     /**
      * Lista productos con filtros opcionales
      */
+
     public function list(
         ?int $categoryId = null,
         ?int $brandId = null,
@@ -18,8 +21,9 @@ class ProductService
         ?string $saleType = null,
         bool $activeOnly = false,
         ?string $search = null,
-        ?array $include = null
-    ): Collection {
+        ?array $include = null,
+        int $perPage = 15
+    ): LengthAwarePaginator {
         $query = Product::query();
 
         if ($categoryId) {
@@ -30,7 +34,7 @@ class ProductService
             $query->where('brand_id', $brandId);
         }
 
-        if ($regionId) { // ← AGREGAR
+        if ($regionId) {
             $query->where('region_id', $regionId);
         }
 
@@ -43,70 +47,49 @@ class ProductService
         }
 
         if ($search) {
-            $query->where('name', 'like', "%{$search}%");
+            $query->where('name', 'ilike', "%{$search}%");
         }
 
         if ($include) {
             $query->with($include);
         }
 
-        return $query->orderBy('name')->get();
+        return $query->orderBy('name')->paginate($perPage);
     }
 
-    /**
-     * Obtiene todos los productos
-     */
     public function getAll(): Collection
     {
-        return $this->list();
+        return Product::query()->orderBy('name')->get();
     }
 
-    /**
-     * Obtiene productos activos
-     */
     public function getActive(): Collection
     {
-        return $this->list(activeOnly: true);
+        return Product::query()->active()->orderBy('name')->get();
     }
 
-    /**
-     * Obtiene productos por categoría
-     */
     public function getByCategory(int $categoryId): Collection
     {
-        return $this->list(categoryId: $categoryId);
+        return Product::query()->where('category_id', $categoryId)->orderBy('name')->get();
     }
 
-    /**
-     * Obtiene productos por región
-     */
     public function getByRegion(int $regionId): Collection
     {
-        return $this->list(regionId: $regionId);
+        return Product::query()->where('region_id', $regionId)->orderBy('name')->get();
     }
 
-    /**
-     * Obtiene productos por marca
-     */
     public function getByBrand(int $brandId): Collection
     {
-        return $this->list(brandId: $brandId);
+        return Product::query()->where('brand_id', $brandId)->orderBy('name')->get();
     }
 
-    /**
-     * Obtiene productos por tipo de venta
-     */
     public function getBySaleType(string $saleType): Collection
     {
-        return $this->list(saleType: $saleType);
+        return Product::query()->where('sale_type', $saleType)->orderBy('name')->get();
     }
 
-    /**
-     * Busca productos por nombre
-     */
     public function search(string $query): Collection
     {
-        return $this->list(search: $query);
+        return Product::query()->where('name', 'like', "%{$query}%")->orderBy('name')->get();
     }
 
     /**
