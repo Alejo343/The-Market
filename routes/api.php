@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
     // Productos
+    Route::patch('products/bulk', [ProductController::class, 'bulkUpdate']);
     Route::post('products', [ProductController::class, 'store']);
     Route::put('products/{product}', [ProductController::class, 'update']);
     Route::delete('products/{product}', [ProductController::class, 'destroy']);

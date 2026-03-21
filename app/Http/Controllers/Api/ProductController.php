@@ -78,6 +78,36 @@ class ProductController extends Controller
         );
     }
 
+    public function bulkUpdate(Request $request): JsonResponse
+    {
+        $request->validate([
+            'products'              => ['required', 'array', 'min:1'],
+            'products.*.id'          => ['required', 'integer'],
+            'products.*.name'        => ['sometimes', 'string', 'max:255'],
+            'products.*.description' => ['sometimes', 'nullable', 'string'],
+            'products.*.price'       => ['sometimes', 'numeric', 'min:0'],
+        ], [
+            'products.required'           => 'La lista de productos es obligatoria',
+            'products.array'              => 'El campo productos debe ser un arreglo',
+            'products.min'                => 'Debe enviar al menos un producto',
+            'products.*.id.required'      => 'Cada producto debe tener un ID',
+            'products.*.id.integer'       => 'El ID de cada producto debe ser un número entero',
+            'products.*.name.string'      => 'El nombre debe ser texto',
+            'products.*.name.max'         => 'El nombre no puede exceder 255 caracteres',
+            'products.*.price.numeric'    => 'El precio debe ser un número',
+            'products.*.price.min'        => 'El precio no puede ser negativo',
+        ]);
+
+        $result = $this->service->bulkUpdate($request->input('products'));
+
+        return response()->json([
+            'message' => 'Actualización masiva completada',
+            'updated_count' => count($result['updated']),
+            'updated_ids'   => $result['updated'],
+            'errors'        => $result['errors'],
+        ], empty($result['errors']) ? 200 : 207);
+    }
+
     public function destroy(Product $product): JsonResponse
     {
         try {

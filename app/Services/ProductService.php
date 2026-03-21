@@ -136,6 +136,35 @@ class ProductService
     }
 
     /**
+     * Actualiza masivamente nombre, descripción y precio de productos
+     *
+     * @param  array<array{id: int, name?: string, description?: string, price?: numeric}> $items
+     * @return array{updated: int[], errors: array<int, string[]>}
+     */
+    public function bulkUpdate(array $items): array
+    {
+        $updated = [];
+        $errors  = [];
+
+        foreach ($items as $item) {
+            $id   = $item['id'];
+            $data = array_intersect_key($item, array_flip(['name', 'description', 'price']));
+
+            $product = Product::find($id);
+
+            if (!$product) {
+                $errors[$id] = ['Producto no encontrado'];
+                continue;
+            }
+
+            $product->update($data);
+            $updated[] = $id;
+        }
+
+        return compact('updated', 'errors');
+    }
+
+    /**
      * Elimina un producto
      */
     public function delete(Product $product): void
