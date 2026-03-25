@@ -28,7 +28,8 @@ new class extends Component {
     public string $description = '';
     public string $sale_type = 'unit';
     public ?int $category_id = null;
-    public ?int $brand_id = null;
+    public int|string|null $brand_id = null;
+    public string $brandInput = '';
     public ?int $region_id = null;
     public bool $active = true;
 
@@ -71,6 +72,18 @@ new class extends Component {
                 'regions' => collect(),
             ];
         }
+    }
+
+    public function startNewBrand(): void
+    {
+        $this->brand_id = -1;
+        $this->brandInput = '';
+    }
+
+    public function cancelNewBrand(): void
+    {
+        $this->brand_id = null;
+        $this->brandInput = '';
     }
 
     /**
@@ -147,7 +160,7 @@ new class extends Component {
             $this->description = $product->description ?? '';
             $this->sale_type = $product->sale_type;
             $this->category_id = $product->category_id;
-            $this->brand_id = $product->brand_id;
+            $this->brand_id = $this->brandInput = '';
             $this->region_id = $product->region_id;
             $this->active = $product->active;
 
@@ -181,6 +194,7 @@ new class extends Component {
         $this->category_id = null;
         $this->brand_id = null;
         $this->region_id = null;
+        $this->brandInput = '';
         $this->active = true;
         $this->existingMedia = [];
         $this->newImages = [];
@@ -252,7 +266,8 @@ new class extends Component {
                 'description' => 'nullable|string',
                 'sale_type' => 'required|in:unit,weight',
                 'category_id' => 'required|exists:categories,id',
-                'brand_id' => 'nullable|exists:brands,id',
+                'brand_id' => 'nullable|integer',
+                'brandInput' => 'nullable|string|max:255',
                 'region_id' => 'nullable|exists:regions,id',
                 'active' => 'boolean',
                 'newImages.*' => 'nullable|image|max:2048',
@@ -274,12 +289,21 @@ new class extends Component {
         try {
             $product = Product::findOrFail($this->editingId);
 
+            // Resolver marca
+            $brandId = null;
+            if ((int) $this->brand_id === -1 && trim($this->brandInput) !== '') {
+                $brand = app(BrandService::class)->create(['name' => trim($this->brandInput)]);
+                $brandId = $brand->id;
+            } elseif ((int) $this->brand_id > 0) {
+                $brandId = $this->brand_id;
+            }
+
             $productService->update($product, [
                 'name' => $this->name,
                 'description' => $this->description,
                 'sale_type' => $this->sale_type,
                 'category_id' => $this->category_id,
-                'brand_id' => $this->brand_id,
+                'brand_id' => $brandId,
                 'region_id' => $this->region_id,
                 'active' => $this->active,
             ]);
@@ -777,13 +801,38 @@ new class extends Component {
                         <!-- Marca -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
-                            <select wire:model="brand_id"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('brand_id') border-red-400 @enderror">
-                                <option value="">Sin marca</option>
-                                @foreach ($brands as $brand)
-                                    <option value="{{ $brand->id }}">{{ $brand->name }}</option>
-                                @endforeach
-                            </select>
+
+                            @if ($brand_id === -1)
+                                <div class="flex gap-2">
+                                    <input type="text" wire:model="brandInput"
+                                        placeholder="Nombre de la nueva marca..."
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('brandInput') border-red-400 @enderror"
+                                        autofocus>
+                                    <button type="button" wire:click="cancelNewBrand"
+                                        class="px-3 py-2 text-xs bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors">
+                                        Cancelar
+                                    </button>
+                                </div>
+                                <p class="mt-1 text-xs text-green-600">Se creará una nueva marca al guardar</p>
+                            @else
+                                <div class="flex gap-2">
+                                    <select wire:model="brand_id"
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('brand_id') border-red-400 @enderror">
+                                        <option value="">Sin marca</option>
+                                        @foreach ($brands as $brand)
+                                            <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" wire:click="startNewBrand"
+                                        class="px-3 py-2 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap">
+                                        + Nueva
+                                    </button>
+                                </div>
+                            @endif
+
+                            @error('brandInput')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
                             @error('brand_id')
                                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                             @enderror

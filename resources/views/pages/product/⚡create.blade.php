@@ -14,6 +14,7 @@ new class extends Component {
     public string $sale_type = 'unit';
     public ?int $category_id = null;
     public ?int $brand_id = null;
+    public string $brandInput = '';
     public ?int $region_id = null;
     public bool $active = true;
 
@@ -36,7 +37,7 @@ new class extends Component {
     /**
      * Crea un nuevo producto
      */
-    public function save(ProductService $productService, MediaService $mediaService)
+    public function save(ProductService $productService, MediaService $mediaService, BrandService $brandService)
     {
         $validated = $this->validate(
             [
@@ -44,7 +45,8 @@ new class extends Component {
                 'description' => 'nullable|string',
                 'sale_type' => 'required|in:unit,weight',
                 'category_id' => 'required|exists:categories,id',
-                'brand_id' => 'nullable|exists:brands,id',
+                'brandInput' => 'nullable|string|max:255',
+                'brand_id' => 'nullable|integer',
                 'region_id' => 'nullable|exists:regions,id',
                 'active' => 'boolean',
                 'images.*' => 'nullable|image|max:2048',
@@ -56,7 +58,7 @@ new class extends Component {
                 'sale_type.in' => 'El tipo de venta debe ser unidad o peso',
                 'category_id.required' => 'La categoría es obligatoria',
                 'category_id.exists' => 'La categoría seleccionada no existe',
-                'brand_id.exists' => 'La marca seleccionada no existe',
+                'brandInput.max' => 'El nombre de la marca no puede exceder 255 caracteres',
                 'region_id.exists' => 'La región seleccionada no existe',
                 'images.*.image' => 'El archivo debe ser una imagen',
                 'images.*.max' => 'Cada imagen no puede exceder 2MB',
@@ -64,13 +66,24 @@ new class extends Component {
         );
 
         try {
+            // Resolver marca
+            $brandId = null;
+            if ($this->brand_id === -1 && trim($this->brandInput) !== '') {
+                // Crear nueva marca
+                $brand = $brandService->create(['name' => trim($this->brandInput)]);
+                $brandId = $brand->id;
+            } elseif ($this->brand_id > 0) {
+                // Marca existente seleccionada
+                $brandId = $this->brand_id;
+            }
+
             // Crear el producto
             $product = $productService->create([
                 'name' => $validated['name'],
                 'description' => $validated['description'],
                 'sale_type' => $validated['sale_type'],
                 'category_id' => $validated['category_id'],
-                'brand_id' => $validated['brand_id'],
+                'brand_id' => $brandId,
                 'region_id' => $validated['region_id'],
                 'active' => $validated['active'],
             ]);
@@ -87,6 +100,18 @@ new class extends Component {
         } catch (\Exception $e) {
             session()->flash('error', 'Error al crear el producto: ' . $e->getMessage());
         }
+    }
+
+    public function startNewBrand(): void
+    {
+        $this->brand_id = -1;
+        $this->brandInput = '';
+    }
+
+    public function cancelNewBrand(): void
+    {
+        $this->brand_id = null;
+        $this->brandInput = '';
     }
 
     public function removeImage(int $orderPosition): void
@@ -188,17 +213,38 @@ new class extends Component {
 
                 <!-- Brand Field -->
                 <div>
-                    <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Marca
-                    </label>
-                    <select id="brand_id" wire:model="brand_id"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('brand_id') border-red-500 @enderror">
-                        <option value="">Sin marca</option>
-                        @foreach ($brands as $brand)
-                            <option value="{{ $brand->id }}">{{ $brand->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('brand_id')
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Marca</label>
+
+                    @if ($brand_id === -1)
+                        {{-- Modo: crear nueva marca --}}
+                        <div class="flex gap-2">
+                            <input type="text" wire:model="brandInput" placeholder="Nombre de la nueva marca..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('brandInput') border-red-500 @enderror"
+                                autofocus>
+                            <button type="button" wire:click="cancelNewBrand"
+                                class="px-3 py-2 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors">
+                                Cancelar
+                            </button>
+                        </div>
+                        <p class="mt-1 text-xs text-green-600">Se creará una nueva marca al guardar</p>
+                    @else
+                        {{-- Modo: seleccionar marca existente --}}
+                        <div class="flex gap-2">
+                            <select wire:model="brand_id"
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Sin marca</option>
+                                @foreach ($brands as $brand)
+                                    <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" wire:click="startNewBrand"
+                                class="px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap">
+                                + Nueva
+                            </button>
+                        </div>
+                    @endif
+
+                    @error('brandInput')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -280,8 +326,8 @@ new class extends Component {
 
                 {{-- Previews con drag & drop --}}
                 @if ($images)
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3" id="images-sortable" x-data="imagesSorter()"
-                        x-init="init()">
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3" id="images-sortable"
+                        x-data="imagesSorter()" x-init="init()">
                         @foreach ($imageOrder as $position => $realIndex)
                             @php $image = $images[$realIndex]; @endphp
                             <div class="relative group cursor-grab active:cursor-grabbing rounded-lg overflow-hidden"
