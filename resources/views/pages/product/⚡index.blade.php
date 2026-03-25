@@ -15,6 +15,7 @@ new class extends Component {
     public string $search = '';
     public ?int $filterCategoryId = null;
     public ?int $filterBrandId = null;
+    public ?int $filterRegionId = null;
     public ?string $filterSaleType = null;
     public bool $showActiveOnly = false;
     public int $perPage = 15;
@@ -50,7 +51,7 @@ new class extends Component {
     public function with(ProductService $productService, CategoryService $categoryService, BrandService $brandService, RegionService $regionService): array
     {
         try {
-            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'region', 'media'], perPage: $this->perPage);
+            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, regionId: $this->filterRegionId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'region', 'media'], perPage: $this->perPage);
 
             $products->getCollection()->loadCount(['variants', 'weightLots', 'media']);
 
@@ -93,6 +94,12 @@ new class extends Component {
         $this->resetMessages();
     }
 
+    public function updatedFilterRegionId()
+    {
+        $this->resetPage();
+        $this->resetMessages();
+    }
+
     public function updatedFilterSaleType()
     {
         $this->resetPage();
@@ -118,6 +125,7 @@ new class extends Component {
         $this->search = '';
         $this->filterCategoryId = null;
         $this->filterBrandId = null;
+        $this->filterRegionId = null;
         $this->filterSaleType = null;
         $this->showActiveOnly = false;
         $this->resetPage();
@@ -391,7 +399,7 @@ new class extends Component {
 
     <!-- Filters -->
     <div class="mb-6 bg-white rounded-lg shadow p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
             <!-- Search -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
@@ -419,6 +427,18 @@ new class extends Component {
                     <option value="">Todas las marcas</option>
                     @foreach ($brands as $brand)
                         <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Region Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Región</label>
+                <select wire:model.live="filterRegionId"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Todas las regiones</option>
+                    @foreach ($regions as $region)
+                        <option value="{{ $region->id }}">{{ $region->name }}</option>
                     @endforeach
                 </select>
             </div>
