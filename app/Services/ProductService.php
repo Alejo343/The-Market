@@ -19,9 +19,12 @@ class ProductService
         ?int $brandId = null,
         ?int $regionId = null,
         ?string $saleType = null,
-        bool $activeOnly = false,
+        ?string $status = null,
         ?string $search = null,
         ?array $include = null,
+        bool $noBrand = false,
+        bool $noCategory = false,
+        bool $noRegion = false,
         int $perPage = 15
     ): LengthAwarePaginator {
         $query = Product::query();
@@ -42,8 +45,10 @@ class ProductService
             $query->where('sale_type', $saleType);
         }
 
-        if ($activeOnly) {
+        if ($status === 'active') {
             $query->active();
+        } elseif ($status === 'inactive') {
+            $query->where('active', false);
         }
 
         if ($search) {
@@ -52,6 +57,16 @@ class ProductService
 
         if ($include) {
             $query->with($include);
+        }
+
+        if ($noBrand) {
+            $query->whereNull('brand_id');
+        }
+        if ($noCategory) {
+            $query->whereNull('category_id');
+        }
+        if ($noRegion) {
+            $query->whereNull('region_id');
         }
 
         return $query->orderBy('name')->paginate($perPage);

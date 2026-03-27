@@ -17,8 +17,12 @@ new class extends Component {
     public ?int $filterBrandId = null;
     public ?int $filterRegionId = null;
     public ?string $filterSaleType = null;
-    public bool $showActiveOnly = false;
+    public ?string $filterStatus = null;
     public int $perPage = 15;
+
+    public bool $filterNoBrand = false;
+    public bool $filterNoCategory = false;
+    public bool $filterNoRegion = false;
 
     public ?int $editingId = null;
     public ?int $deletingId = null;
@@ -52,8 +56,7 @@ new class extends Component {
     public function with(ProductService $productService, CategoryService $categoryService, BrandService $brandService, RegionService $regionService): array
     {
         try {
-            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, regionId: $this->filterRegionId, saleType: $this->filterSaleType, activeOnly: $this->showActiveOnly, search: $this->search, include: ['category', 'brand', 'region', 'media'], perPage: $this->perPage);
-
+            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, regionId: $this->filterRegionId, saleType: $this->filterSaleType, status: $this->filterStatus, noBrand: $this->filterNoBrand, noCategory: $this->filterNoCategory, noRegion: $this->filterNoRegion, search: $this->search, include: ['category', 'brand', 'region', 'media'], perPage: $this->perPage);
             $products->getCollection()->loadCount(['variants', 'weightLots', 'media']);
 
             return [
@@ -119,13 +122,26 @@ new class extends Component {
         $this->resetMessages();
     }
 
-    public function updatedShowActiveOnly()
+    public function updatedFilterStatus()
     {
         $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedPerPage()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterNoBrand()
+    {
+        $this->resetPage();
+    }
+    public function updatedFilterNoCategory()
+    {
+        $this->resetPage();
+    }
+    public function updatedFilterNoRegion()
     {
         $this->resetPage();
     }
@@ -140,7 +156,10 @@ new class extends Component {
         $this->filterBrandId = null;
         $this->filterRegionId = null;
         $this->filterSaleType = null;
-        $this->showActiveOnly = false;
+        $this->filterStatus = null;
+        $this->filterNoBrand = false;
+        $this->filterNoCategory = false;
+        $this->filterNoRegion = false;
         $this->resetPage();
         $this->resetMessages();
     }
@@ -480,11 +499,30 @@ new class extends Component {
         </div>
 
         <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" wire:model.live="showActiveOnly"
-                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                <span class="text-sm text-gray-700">Solo productos activos</span>
-            </label>
+            <div class="flex items-center gap-6 flex-wrap">
+                <select wire:model.live="filterStatus"
+                    class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Todos los estados</option>
+                    <option value="active">Activos</option>
+                    <option value="inactive">Inactivos</option>
+                </select>
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" wire:model.live="filterNoCategory"
+                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <span class="text-sm text-gray-700">Sin categoría</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" wire:model.live="filterNoBrand"
+                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <span class="text-sm text-gray-700">Sin marca</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" wire:model.live="filterNoRegion"
+                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <span class="text-sm text-gray-700">Sin región</span>
+                </label>
+            </div>
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2">
