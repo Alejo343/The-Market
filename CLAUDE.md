@@ -1,66 +1,93 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guide Claude Code.
 
-## Project Overview
-
-**The Market** is a Laravel 12 Point of Sale (POS) and inventory management system supporting both unit-based and weight-based (bulk/market-style) products.
-
-## Common Commands
+## Commands
 
 ```bash
-# Development (runs Laravel server, queue listener, and Vite concurrently)
-composer run dev
-
-# Full project setup from scratch
-composer run setup
-
-# Frontend only
-npm run dev        # Vite dev server with HMR
-npm run build      # Production build
-
-# Tests
-composer run test
-php artisan test --filter TestName   # Single test
-
-# Code style
-./vendor/bin/pint                    # Auto-fix
-./vendor/bin/pint --test             # Check only
+composer setup   # deps + env + migrate + build
+composer dev     # php + queue + vite
+composer test    # clear cache + pest
+php artisan test --filter TestName
+php artisan migrate
+npm run build
+./vendor/bin/pint
 ```
 
 ## Architecture
 
-The app follows a layered pattern: **Routes → Controllers → Services → Models → Database**.
+Laravel 12 POS/inventory. Unit + weight products.
 
-- **`app/Http/Controllers/Api/`** — RESTful JSON API (authenticated via Laravel Sanctum tokens)
-- **`app/Http/Controllers/Web/`** — Blade-rendered HTML responses
-- **`app/Services/`** — All business logic lives here; controllers are thin and delegate to services
-- **`app/Models/`** — Eloquent models
-- **`resources/views/`** — Blade templates; interactive pages use Livewire components
+### Structure
 
-## Key Domain Concepts
+2 interfaces:
 
-**Two product types** (determined by `products.sale_type`):
-- **Unit** → backed by `product_variants` (has SKU, barcode, quantity)
-- **Weight** → backed by `weight_lots` (bulk/meat-market style, sold by weight)
+- API (routes/api.php) → Sanctum Bearer
+- Web (routes/web.php) → Blade + Livewire + session + Alpine
 
-**Inventory movements** are polymorphic — `InventoryMovement` can reference either a `ProductVariant` or a `WeightLot` as its moveable. Movement types: `in`, `out`, `adjustment`.
+## Payments — Wompi MCP Server
 
-**Sales** have a `channel` field: `store` or `online`.
+MCP server `wompi-docs` is configured globally and available in all sessions.
+Server path: `C:/Users/Webmaster/.claude/mcp-servers/wompi-docs/index.js`
 
-## API Authentication
+### Flow
 
-Public endpoints (no auth): `GET /api/products`, categories, brands, taxes, regions, variants, weight-lots, and `POST /api/login` / `POST /api/register`.
+Route → Controller → Service → Model → DB
+-FormRequest (validate)
+-Resource (JSON)
 
-Protected endpoints require a Sanctum Bearer token in the `Authorization` header.
+Requests: 23
+Resources: 13
+Services: 12
+Models: 12
+Controllers thin. Logic in services.
 
-## Frontend Stack
+### Sales Model
 
-- **Livewire 4** — reactive server-side components (no separate SPA)
-- **Alpine.js** — lightweight client-side interactivity
-- **Tailwind CSS 4** — utility-first styling
-- **Chart.js** — dashboards/charts
+Products are either **unit-based** or **weight-based**:
 
-## Database
+- **Unit:** Product → ProductVariant → stock--
+- **Weight:** Product → WeightLot → remaining_weight--
 
-Default: SQLite (configured in `.env`). Session, cache, and queue all use the `database` driver.
+SaleItem + InventoryMovement = polymorphic
+→ Variant or WeightLot
+
+Always check:
+saleable_type / moveable_type
+
+### Relations
+
+Product → variants, weightLots, media (pivot: order, is_primary)
+Sale → items → user
+InventoryMovement → polymorphi
+
+### Auth
+
+API → Sanctum (Bearer token)
+Web → session
+
+Roles: admin, cashier (manual check)
+
+ForceJsonResponse → API always JSON
+
+### Frontend Stack
+
+Livewire 4 (reactive)
+Alpine.js 3 (UI state)
+Chart.js (charts)
+Axios (AJAX)
+Tailwind v4
+
+### Database
+
+SQLite (dev/test)
+MySQL (prod)
+Queue/cache/session → DB
+
+20 migrations → run migrate
+
+### Notable Scopes
+
+Product → active(), byUnit(), byWeight()
+ProductVariant → lowStock(), outOfStock(), inStock(), onSale()
+Sale → store(), online(), today(), betweenDates()

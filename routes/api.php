@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\ProductController;
@@ -60,6 +62,20 @@ Route::get('media/{media}', [MediaController::class, 'show']);
 Route::get('regions', [RegionController::class, 'index']);
 Route::get('regions/{region}/variants', [RegionController::class, 'variants']); // ← antes
 Route::get('regions/{region}', [RegionController::class, 'show']);              // ← después
+
+// Checkout / Wompi
+Route::get('checkout/acceptance', [CheckoutController::class, 'acceptance']);
+Route::post('checkout/signature', [CheckoutController::class, 'signature']);
+Route::get('checkout/pse/institutions', [CheckoutController::class, 'pseInstitutions']);
+Route::post('checkout/nequi/pay', [CheckoutController::class, 'nequiPay']);
+Route::post('checkout/card/pay', [CheckoutController::class, 'cardPay']);
+Route::post('checkout/pse/pay', [CheckoutController::class, 'psePay']);
+Route::get('checkout/transactions/{transactionId}/status', [CheckoutController::class, 'transactionStatus']);
+Route::get('checkout/orders/{reference}/status', [CheckoutController::class, 'orderStatus']);
+Route::get('checkout/orders/history', [CheckoutController::class, 'orderHistory']);
+
+// Webhooks
+Route::post('webhooks/wompi/transaction', [WebhookController::class, 'wompiTransaction']);
 
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
