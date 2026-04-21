@@ -24,6 +24,7 @@ $orders = \App\Models\Order::query()
                     <th class="border p-2 text-left">Total</th>
                     <th class="border p-2 text-left">Estado</th>
                     <th class="border p-2 text-left">Fecha</th>
+                    <th class="border p-2 text-center">Items</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,10 +43,28 @@ $orders = \App\Models\Order::query()
                             </span>
                         </td>
                         <td class="border p-2 text-sm">{{ $order->created_at->format('d/m H:i') }}</td>
+                        <td class="border p-2 text-center">
+                            <button onclick="toggleModal('modal-{{ $order->id }}')" class="text-blue-600 hover:underline text-sm">Ver</button>
+                        </td>
+                    </tr>
+
+                    <tr id="modal-{{ $order->id }}" style="display:none;">
+                        <td colspan="6" class="border p-4 bg-gray-50">
+                            <div class="space-y-2">
+                                @forelse ($order->items_data as $item)
+                                    <div class="text-sm border-l-4 border-blue-400 pl-3">
+                                        <strong>{{ $item['name'] ?? 'Producto' }}</strong><br>
+                                        Cantidad: {{ $item['quantity'] ?? 0 }} | Precio: ${{ number_format($item['price'] ?? 0, 0) }}
+                                    </div>
+                                @empty
+                                    <p class="text-gray-500">Sin items</p>
+                                @endforelse
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="border p-4 text-center text-gray-500">Sin órdenes</td>
+                        <td colspan="6" class="border p-4 text-center text-gray-500">Sin órdenes</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -77,3 +96,10 @@ $orders = \App\Models\Order::query()
         </div>
     </div>
 </div>
+
+<script>
+function toggleModal(id) {
+    const modal = document.getElementById(id);
+    modal.style.display = modal.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
