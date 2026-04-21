@@ -62,7 +62,7 @@ Route::middleware('auth')->group(function () {
     // Route::view('/reports/price-history', 'reports.price-history')->name('reports.price-history');
 
     // Pedidos (E-commerce / Wompi)
-    Route::livewire('/orders', 'pages::order.index')->name('orders.index');
+    Route::view('/orders', 'pages.order.index')->name('orders.index');
 
     // Configuración
     // Route::view('/users', 'users.index')->name('users.index');

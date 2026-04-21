@@ -1,36 +1,19 @@
-<?php
-
-use Livewire\Volt\Component;
-use Livewire\WithPagination;
-use App\Models\Order;
-
-new class extends Component {
-    use WithPagination;
-
-    public string $search = '';
-
-    public function updatedSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function with(): array
-    {
-        return [
-            'orders' => Order::query()
-                ->when($this->search, fn($q) => $q->where('reference', 'like', "%{$this->search}%")
-                    ->orWhere('customer_email', 'like', "%{$this->search}%"))
-                ->orderBy('created_at', 'desc')
-                ->paginate(15),
-        ];
-    }
-}; ?>
+@php
+$search = request('search', '');
+$orders = \App\Models\Order::query()
+    ->when($search, fn($q) => $q->where('reference', 'like', "%{$search}%")
+        ->orWhere('customer_email', 'like', "%{$search}%"))
+    ->orderBy('created_at', 'desc')
+    ->paginate(15);
+@endphp
 
 <div class="px-4 py-8">
     <h1 class="text-2xl font-bold mb-4">Órdenes</h1>
 
-    <input type="text" wire:model.live.debounce.300ms="search" placeholder="Buscar por reference o email..."
-        class="w-full mb-4 px-3 py-2 border rounded">
+    <form method="GET" class="mb-4">
+        <input type="text" name="search" placeholder="Buscar por reference o email..."
+            value="{{ $search }}" class="w-full px-3 py-2 border rounded">
+    </form>
 
     <div class="overflow-x-auto">
         <table class="w-full border-collapse border border-gray-300">
@@ -75,19 +58,19 @@ new class extends Component {
             @if ($orders->onFirstPage())
                 <button disabled class="px-2 py-1 border rounded text-gray-400">←</button>
             @else
-                <button wire:click="previousPage" class="px-2 py-1 border rounded hover:bg-gray-100">←</button>
+                <a href="{{ $orders->previousPageUrl() }}" class="px-2 py-1 border rounded hover:bg-gray-100">←</a>
             @endif
 
             @foreach ($orders->getUrlRange(1, $orders->lastPage()) as $page => $url)
                 @if ($page == $orders->currentPage())
                     <button class="px-2 py-1 bg-blue-500 text-white rounded">{{ $page }}</button>
                 @else
-                    <button wire:click="gotoPage({{ $page }})" class="px-2 py-1 border rounded">{{ $page }}</button>
+                    <a href="{{ $url }}" class="px-2 py-1 border rounded hover:bg-gray-100">{{ $page }}</a>
                 @endif
             @endforeach
 
             @if ($orders->hasMorePages())
-                <button wire:click="nextPage" class="px-2 py-1 border rounded hover:bg-gray-100">→</button>
+                <a href="{{ $orders->nextPageUrl() }}" class="px-2 py-1 border rounded hover:bg-gray-100">→</a>
             @else
                 <button disabled class="px-2 py-1 border rounded text-gray-400">→</button>
             @endif
