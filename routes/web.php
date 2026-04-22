@@ -62,10 +62,10 @@ Route::middleware('auth')->group(function () {
     // Route::view('/reports/price-history', 'reports.price-history')->name('reports.price-history');
 
     // Pedidos (E-commerce / Wompi)
-    Route::livewire('/orders', 'pages::order.index')->name('orders.index');
-    Route::livewire('/orders/{reference}', 'pages::order.show')->name('orders.show');
-    Route::livewire('/payments/report', 'pages::payments.report')->name('payments.report');
-    Route::livewire('/inventory/dashboard', 'pages::inventory.dashboard')->name('inventory.dashboard');
+    Route::livewire('/orders', 'order.index')->name('orders.index');
+    Route::livewire('/orders/{reference}', 'order.show')->name('orders.show');
+    Route::livewire('/payments/report', 'payments.report')->name('payments.report');
+    Route::livewire('/inventory/dashboard', 'inventory.dashboard')->name('inventory.dashboard');
 
     // Configuración
     // Route::view('/users', 'users.index')->name('users.index');
