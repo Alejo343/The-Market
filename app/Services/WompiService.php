@@ -98,7 +98,7 @@ class WompiService
         return "{$prefix}-" . time() . "-{$rand}";
     }
 
-    public function createNequiTransaction(string $phone, int $amountInCents, string $customerEmail): array
+    public function createNequiTransaction(string $phone, int $amountInCents, string $customerEmail, ?string $reference = null): array
     {
         if (!$this->privateKey) {
             throw new \Exception('Private key incompleta');
@@ -110,7 +110,7 @@ class WompiService
             throw new \Exception('Integrity secret incompleta');
         }
 
-        $reference = $this->generateReference('BARRIL-NQ');
+        $reference ??= $this->generateReference('BARRIL-NQ');
         $signature = $this->generateSignature($reference, $amountInCents);
         $tokens = $this->getAcceptanceTokens();
         $acceptance_token = $tokens['acceptance_token'];
@@ -147,7 +147,7 @@ class WompiService
         ];
     }
 
-    public function createCardTransaction(string $cardToken, int $amountInCents, string $customerEmail, int $installments = 1): array
+    public function createCardTransaction(string $cardToken, int $amountInCents, string $customerEmail, int $installments = 1, ?string $reference = null): array
     {
         if (!$this->privateKey) {
             throw new \Exception('Private key incompleta');
@@ -159,7 +159,7 @@ class WompiService
             throw new \Exception('Integrity secret incompleta');
         }
 
-        $reference = $this->generateReference('BARRIL-CD');
+        $reference ??= $this->generateReference('BARRIL-CD');
         $signature = $this->generateSignature($reference, $amountInCents);
         $tokens = $this->getAcceptanceTokens();
         $acceptance_token = $tokens['acceptance_token'];
@@ -207,13 +207,14 @@ class WompiService
         string $userLegalId,
         string $financialInstitutionCode,
         string $redirectUrl,
-        string $paymentDescription = ''
+        string $paymentDescription = '',
+        ?string $reference = null
     ): array {
         if (!$this->privateKey || !$this->publicKey || !$this->integritySecret) {
             throw new \Exception('Configuración de pagos incompleta');
         }
 
-        $reference = $this->generateReference('BARRIL-PSE');
+        $reference ??= $this->generateReference('BARRIL-PSE');
         $signature = $this->generateSignature($reference, $amountInCents);
 
         $tokens = $this->getAcceptanceTokens();

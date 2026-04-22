@@ -21,5 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         View::addNamespace('livewire', resource_path('views/livewire'));
+        View::addNamespace('volt-livewire', resource_path('views/livewire'));
+        View::addNamespace('pages', resource_path('views/pages'));
     }
 }

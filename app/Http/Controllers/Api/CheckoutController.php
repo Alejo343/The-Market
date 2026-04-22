@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Services\WompiService;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
@@ -77,14 +79,10 @@ class CheckoutController extends Controller
         ]);
 
         try {
-            $txData = $this->wompiService->createNequiTransaction(
-                $validated['phone'],
-                $validated['amountInCents'],
-                $validated['customerEmail']
-            );
+            $reference = Str::ulid();
 
             $order = $this->orderService->createPendingOrder(
-                $txData['reference'],
+                $reference,
                 'NEQUI',
                 $validated['customerEmail'],
                 $validated['customerName'],
@@ -96,11 +94,18 @@ class CheckoutController extends Controller
                 $validated['notes'] ?? ''
             );
 
-            $this->orderService->updateTransactionId($txData['reference'], $txData['transactionId']);
+            $txData = $this->wompiService->createNequiTransaction(
+                $validated['phone'],
+                $validated['amountInCents'],
+                $validated['customerEmail'],
+                $reference
+            );
+
+            $this->orderService->updateTransactionId($reference, $txData['transactionId']);
 
             return response()->json([
                 'transactionId' => $txData['transactionId'],
-                'reference' => $txData['reference'],
+                'reference' => $reference,
                 'status' => $txData['status'],
             ]);
         } catch (\Exception $e) {
@@ -127,15 +132,10 @@ class CheckoutController extends Controller
         ]);
 
         try {
-            $txData = $this->wompiService->createCardTransaction(
-                $validated['cardToken'],
-                $validated['amountInCents'],
-                $validated['customerEmail'],
-                $validated['installments'] ?? 1
-            );
+            $reference = Str::ulid();
 
             $order = $this->orderService->createPendingOrder(
-                $txData['reference'],
+                $reference,
                 'CARD',
                 $validated['customerEmail'],
                 $validated['customerName'],
@@ -147,11 +147,19 @@ class CheckoutController extends Controller
                 "Installments: " . ($validated['installments'] ?? 1) . ($validated['notes'] ? "\n" . $validated['notes'] : '')
             );
 
-            $this->orderService->updateTransactionId($txData['reference'], $txData['transactionId']);
+            $txData = $this->wompiService->createCardTransaction(
+                $validated['cardToken'],
+                $validated['amountInCents'],
+                $validated['customerEmail'],
+                $validated['installments'] ?? 1,
+                $reference
+            );
+
+            $this->orderService->updateTransactionId($reference, $txData['transactionId']);
 
             return response()->json([
                 'transactionId' => $txData['transactionId'],
-                'reference' => $txData['reference'],
+                'reference' => $reference,
                 'status' => $txData['status'],
             ]);
         } catch (\Exception $e) {
@@ -182,21 +190,10 @@ class CheckoutController extends Controller
         ]);
 
         try {
-            $txData = $this->wompiService->createPseTransaction(
-                $validated['amountInCents'],
-                $validated['customerEmail'],
-                $validated['fullName'],
-                $validated['phone'],
-                $validated['userType'],
-                $validated['userLegalIdType'],
-                $validated['userLegalId'],
-                $validated['financialInstitutionCode'],
-                $validated['redirectUrl'],
-                $validated['paymentDescription'] ?? ''
-            );
+            $reference = Str::ulid();
 
             $order = $this->orderService->createPendingOrder(
-                $txData['reference'],
+                $reference,
                 'PSE',
                 $validated['customerEmail'],
                 $validated['fullName'],
@@ -208,11 +205,25 @@ class CheckoutController extends Controller
                 "Bank: " . $validated['financialInstitutionCode'] . ($validated['notes'] ? "\n" . $validated['notes'] : '')
             );
 
-            $this->orderService->updateTransactionId($txData['reference'], $txData['transactionId']);
+            $txData = $this->wompiService->createPseTransaction(
+                $validated['amountInCents'],
+                $validated['customerEmail'],
+                $validated['fullName'],
+                $validated['phone'],
+                $validated['userType'],
+                $validated['userLegalIdType'],
+                $validated['userLegalId'],
+                $validated['financialInstitutionCode'],
+                $validated['redirectUrl'],
+                $validated['paymentDescription'] ?? '',
+                $reference
+            );
+
+            $this->orderService->updateTransactionId($reference, $txData['transactionId']);
 
             return response()->json([
                 'transactionId' => $txData['transactionId'],
-                'reference' => $txData['reference'],
+                'reference' => $reference,
                 'asyncPaymentUrl' => $txData['asyncPaymentUrl'],
             ]);
         } catch (\Exception $e) {
