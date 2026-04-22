@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Media;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -49,13 +50,15 @@ class MediaService
 
         DB::beginTransaction();
 
-        try {
-            // Generar nombre único para evitar colisiones
-            $filename = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
-            $uniqueName = Str::uuid() . '.' . $extension;
+        $tmpPath = null;
 
-            // Determinar carpeta según tipo
+        try {
+            $filename = $file->getClientOriginalName();
+
+            // Process: center by visual mass, square canvas, convert to WebP
+            $processor = app(ImageProcessingService::class);
+            $tmpPath = $processor->process($file);
+
             $folder = match ($type) {
                 Media::TYPE_PRODUCT => 'products',
                 Media::TYPE_CATEGORY => 'categories',
@@ -65,19 +68,27 @@ class MediaService
                 default => 'other',
             };
 
-            // Almacenar en carpeta correspondiente
-            $path = $file->storeAs($folder, $uniqueName, 'public');
+            if ($tmpPath) {
+                // Processed raster image → store as WebP
+                $uniqueName = Str::uuid() . '.webp';
+                $path = Storage::disk('public')->putFileAs($folder, new File($tmpPath), $uniqueName);
+                $size = filesize($tmpPath);
+            } else {
+                // Non-raster (e.g. SVG) → store as-is
+                $extension = $file->getClientOriginalExtension();
+                $uniqueName = Str::uuid() . '.' . $extension;
+                $path = $file->storeAs($folder, $uniqueName, 'public');
+                $size = $file->getSize();
+            }
 
-            // Crear registro de media
             $media = Media::create([
                 'filename' => $filename,
                 'path' => $path,
                 'type' => $type,
                 'alt' => $alt,
-                'size' => $file->getSize(),
+                'size' => $size,
             ]);
 
-            // Ejecutar callback después de crear (para asociaciones)
             if ($afterCreate) {
                 $afterCreate($media);
             }
@@ -88,12 +99,15 @@ class MediaService
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Eliminar archivo si falló
             if (isset($path)) {
                 Storage::disk('public')->delete($path);
             }
 
             throw $e;
+        } finally {
+            if ($tmpPath && file_exists($tmpPath)) {
+                unlink($tmpPath);
+            }
         }
     }
 
