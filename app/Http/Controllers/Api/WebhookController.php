@@ -18,16 +18,15 @@ class WebhookController extends Controller
     public function wompiTransaction(Request $request): JsonResponse
     {
         try {
-            $signature = $request->header('X-Wompi-Signature');
-            if (!$this->verifyWebhookSignature($request, $signature)) {
-                \Log::warning('Webhook: Invalid signature');
-                return response()->json(['error' => 'Invalid signature'], 401);
-            }
-
             $data = $request->json()->all();
 
-            if (!isset($data['event'], $data['data'])) {
+            if (!isset($data['event'], $data['data'], $data['signature'], $data['timestamp'])) {
                 return response()->json(['error' => 'Invalid webhook format'], 400);
+            }
+
+            if (!$this->verifyWebhookSignature($data)) {
+                \Log::warning('Webhook: Invalid signature', ['event' => $data['event'] ?? null]);
+                return response()->json(['error' => 'Invalid signature'], 401);
             }
 
             $event = $data['event'];
@@ -37,9 +36,13 @@ class WebhookController extends Controller
                 return response()->json(['received' => true]);
             }
 
-            $transactionId = $txData['id'] ?? null;
-            $status = $txData['status'] ?? null;
-            $statusMessage = $txData['status_message'] ?? '';
+            $transaction = $txData['transaction'] ?? null;
+            if (!$transaction) {
+                return response()->json(['error' => 'Missing transaction data'], 400);
+            }
+
+            $transactionId = $transaction['id'] ?? null;
+            $status = $transaction['status'] ?? null;
 
             if (!$transactionId || !$status) {
                 return response()->json(['error' => 'Missing transaction ID or status'], 400);
@@ -52,55 +55,74 @@ class WebhookController extends Controller
                 return response()->json(['received' => true]);
             }
 
+            $statusMessage = $transaction['status_message'] ?? '';
             $this->orderService->updateStatus($transactionId, $status, $statusMessage);
 
             \Log::info("Order {$order->reference} updated to status {$status}");
 
             return response()->json(['received' => true, 'order_id' => $order->id]);
         } catch (\Exception $e) {
-            \Log::error('Webhook error: ' . $e->getMessage());
+            \Log::error('Webhook error: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['error' => 'Webhook processing failed'], 500);
         }
     }
 
-    private function verifyWebhookSignature(Request $request, ?string $signature): bool
+    private function verifyWebhookSignature(array $data): bool
     {
-        if (!$signature) {
-            \Log::warning('No signature header provided');
-            return false;
-        }
-
-        $signature = trim($signature);
-
         $secret = config('services.wompi.events_secret');
         if (!$secret) {
             \Log::error('WOMPI_EVENTS_SECRET not configured');
             return false;
         }
 
-        $payload = $request->getContent();
-        $expectedSignature = hash_hmac('sha256', $payload, $secret);
+        $signature = $data['signature'] ?? [];
+        $receivedChecksum = $signature['checksum'] ?? null;
+        $properties = $signature['properties'] ?? [];
+        $timestamp = $data['timestamp'] ?? null;
 
-        \Log::info('Webhook signature debug', [
-            'payload' => $payload,
-            'payload_length' => strlen($payload),
-            'secret_length' => strlen($secret),
-            'received_signature' => $signature,
-            'received_signature_length' => strlen($signature),
-            'received_signature_hex' => bin2hex($signature),
-            'expected_signature' => $expectedSignature,
-            'expected_signature_length' => strlen($expectedSignature),
-            'char_by_char_match' => implode('|', str_split($signature)) === implode('|', str_split($expectedSignature)),
-        ]);
+        if (!$receivedChecksum || !$properties || !$timestamp) {
+            \Log::warning('Webhook: Missing signature components', [
+                'has_checksum' => !empty($receivedChecksum),
+                'has_properties' => !empty($properties),
+                'has_timestamp' => !empty($timestamp),
+            ]);
+            return false;
+        }
 
-        $match = hash_equals($signature, $expectedSignature);
+        $concatenated = '';
+        foreach ($properties as $property) {
+            $value = $this->getNestedValue($data, $property);
+            $concatenated .= $value ?? '';
+        }
+        $concatenated .= $timestamp . $secret;
 
-        \Log::info('Hash equals result', [
-            'match' => $match,
-            'received_bytes' => array_values(unpack('C*', $signature)),
-            'expected_bytes' => array_values(unpack('C*', $expectedSignature)),
-        ]);
+        $calculatedChecksum = hash('sha256', $concatenated);
+
+        $match = hash_equals($receivedChecksum, $calculatedChecksum);
+
+        if (!$match) {
+            \Log::warning('Webhook signature mismatch', [
+                'received' => $receivedChecksum,
+                'calculated' => $calculatedChecksum,
+            ]);
+        }
 
         return $match;
+    }
+
+    private function getNestedValue(array $data, string $path)
+    {
+        $keys = explode('.', $path);
+        // Wompi properties point to fields within data.transaction
+        $value = $data['data'] ?? $data;
+
+        foreach ($keys as $key) {
+            if (!is_array($value) || !isset($value[$key])) {
+                return null;
+            }
+            $value = $value[$key];
+        }
+
+        return $value;
     }
 }
