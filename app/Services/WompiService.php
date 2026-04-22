@@ -257,12 +257,10 @@ class WompiService
 
         $txData = $response->json('data');
         $transactionId = $txData['id'];
-        $asyncUrl = $this->pollAsyncPaymentUrl($transactionId);
 
         return [
             'transactionId' => $transactionId,
             'reference' => $reference,
-            'asyncPaymentUrl' => $asyncUrl,
         ];
     }
 
@@ -285,6 +283,11 @@ class WompiService
             'status' => $data['status'],
             'statusMessage' => $data['status_message'] ?? '',
         ];
+    }
+
+    public function getAsyncPaymentUrl(string $transactionId): string
+    {
+        return $this->pollAsyncPaymentUrl($transactionId);
     }
 
     private function pollAsyncPaymentUrl(string $transactionId, int $maxWaitMs = 25000): string

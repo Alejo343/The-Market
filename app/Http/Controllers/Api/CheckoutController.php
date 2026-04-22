@@ -219,12 +219,15 @@ class CheckoutController extends Controller
                 $reference
             );
 
+            // Guardar transaction_id antes del polling para que el webhook siempre encuentre la orden
             $this->orderService->updateTransactionId($reference, $txData['transactionId']);
+
+            $asyncPaymentUrl = $this->wompiService->getAsyncPaymentUrl($txData['transactionId']);
 
             return response()->json([
                 'transactionId' => $txData['transactionId'],
                 'reference' => $reference,
-                'asyncPaymentUrl' => $txData['asyncPaymentUrl'],
+                'asyncPaymentUrl' => $asyncPaymentUrl,
             ]);
         } catch (\Exception $e) {
             return response()->json(
