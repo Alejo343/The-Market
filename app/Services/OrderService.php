@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendWhatsAppJob;
 use App\Models\Order;
 
 class OrderService
@@ -62,11 +63,30 @@ class OrderService
         // Handle inventory changes
         if ($oldStatus !== 'APPROVED' && $status === 'APPROVED') {
             $this->inventoryService->processApprovedOrder($order);
+            $this->dispatchOrderApprovedNotifications($order);
         } elseif ($oldStatus === 'APPROVED' && in_array($status, ['DECLINED', 'VOIDED', 'ERROR'])) {
             $this->inventoryService->restoreRejectedOrder($order);
         }
 
         return $order;
+    }
+
+    private function dispatchOrderApprovedNotifications(Order $order): void
+    {
+        SendWhatsAppJob::dispatch('notifyBusinessOrderApproved', [
+            $order->reference,
+            $order->customer_name,
+            $order->customer_phone,
+            $order->payment_method,
+            $order->total_amount_cents,
+        ]);
+
+        SendWhatsAppJob::dispatch('notifyCustomerOrderApproved', [
+            $order->customer_phone,
+            $order->customer_name,
+            $order->reference,
+            $order->total_amount_cents,
+        ]);
     }
 
     public function findByReference(string $reference): ?Order

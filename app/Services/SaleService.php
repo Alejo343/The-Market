@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendWhatsAppJob;
 use App\Models\ProductVariant;
 use App\Models\Sale;
 use App\Models\WeightLot;
@@ -151,6 +152,13 @@ class SaleService
 
             // Cargar relaciones para la respuesta
             $sale->load(['user', 'items.item']);
+
+            SendWhatsAppJob::dispatch('notifyBusinessSaleCreated', [
+                $sale->id,
+                $sale->user->name,
+                (float) $sale->total,
+                $sale->items->count(),
+            ]);
 
             return $sale;
         } catch (Exception $e) {

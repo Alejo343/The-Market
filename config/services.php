@@ -43,4 +43,11 @@ return [
         'events_secret' => env('WOMPI_EVENTS_SECRET'),
     ],
 
+    'evolution' => [
+        'url'      => env('EVOLUTION_API_URL'),
+        'key'      => env('EVOLUTION_API_KEY'),
+        'instance' => env('EVOLUTION_INSTANCE'),
+        'business_number' => env('WHATSAPP_BUSINESS_NUMBER'),
+    ],
+
 ];
