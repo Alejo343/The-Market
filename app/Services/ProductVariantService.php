@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Exception;
 
@@ -15,13 +16,16 @@ class ProductVariantService
     public function list(
         ?int $productId = null,
         ?int $categoryId = null,
+        ?int $regionId = null,
         bool $lowStockOnly = false,
         bool $outOfStockOnly = false,
         bool $inStockOnly = false,
         bool $onSaleOnly = false,
         ?string $search = null,
-        ?array $include = null
-    ): Collection {
+        ?array $include = null,
+        int $perPage = 0,
+        string $sortDirection = 'asc'
+    ): Collection|LengthAwarePaginator {
         $query = ProductVariant::query();
 
         if ($productId) {
@@ -30,6 +34,11 @@ class ProductVariantService
         if ($categoryId) {
             $query->whereHas('product', function ($q) use ($categoryId) {
                 $q->where('category_id', $categoryId);
+            });
+        }
+        if ($regionId) {
+            $query->whereHas('product', function ($q) use ($regionId) {
+                $q->where('region_id', $regionId);
             });
         }
 
@@ -65,7 +74,9 @@ class ProductVariantService
             $query->with($include);
         }
 
-        return $query->orderBy('presentation')->get();
+        return $perPage > 0
+            ? $query->orderBy('presentation', $sortDirection)->paginate($perPage)
+            : $query->orderBy('presentation', $sortDirection)->get();
     }
 
     /**

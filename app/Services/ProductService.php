@@ -25,7 +25,8 @@ class ProductService
         bool $noBrand = false,
         bool $noCategory = false,
         bool $noRegion = false,
-        int $perPage = 15
+        int $perPage = 15,
+        string $sortDirection = 'asc'
     ): LengthAwarePaginator {
         $query = Product::query();
 
@@ -69,7 +70,7 @@ class ProductService
             $query->whereNull('region_id');
         }
 
-        return $query->orderBy('name')->paginate($perPage);
+        return $query->orderBy('name', $sortDirection)->paginate($perPage);
     }
 
     public function getAll(): Collection

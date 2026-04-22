@@ -19,6 +19,7 @@ new class extends Component {
     public ?string $filterSaleType = null;
     public ?string $filterStatus = null;
     public int $perPage = 15;
+    public string $sortDirection = 'asc';
 
     public bool $filterNoBrand = false;
     public bool $filterNoCategory = false;
@@ -56,7 +57,7 @@ new class extends Component {
     public function with(ProductService $productService, CategoryService $categoryService, BrandService $brandService, RegionService $regionService): array
     {
         try {
-            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, regionId: $this->filterRegionId, saleType: $this->filterSaleType, status: $this->filterStatus, noBrand: $this->filterNoBrand, noCategory: $this->filterNoCategory, noRegion: $this->filterNoRegion, search: $this->search, include: ['category', 'brand', 'region', 'media'], perPage: $this->perPage);
+            $products = $productService->list(categoryId: $this->filterCategoryId, brandId: $this->filterBrandId, regionId: $this->filterRegionId, saleType: $this->filterSaleType, status: $this->filterStatus, noBrand: $this->filterNoBrand, noCategory: $this->filterNoCategory, noRegion: $this->filterNoRegion, search: $this->search, include: ['category', 'brand', 'region', 'media'], perPage: $this->perPage, sortDirection: $this->sortDirection);
             $products->getCollection()->loadCount(['variants', 'weightLots', 'media']);
 
             return [
@@ -130,6 +131,12 @@ new class extends Component {
 
     public function updatedPerPage()
     {
+        $this->resetPage();
+    }
+
+    public function toggleSort()
+    {
+        $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         $this->resetPage();
     }
 
@@ -566,7 +573,14 @@ new class extends Component {
                             Imagen
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Nombre
+                            <button wire:click="toggleSort" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors">
+                                Nombre
+                                @if ($sortDirection === 'asc')
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                @else
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                @endif
+                            </button>
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Categoría

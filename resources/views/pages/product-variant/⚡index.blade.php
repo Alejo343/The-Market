@@ -1,18 +1,25 @@
 <?php
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Services\ProductVariantService;
 use App\Services\ProductService;
+use App\Services\RegionService;
 use App\Services\TaxService;
 use App\Models\ProductVariant;
 use Picqer\Barcode\BarcodeGeneratorSVG;
 
 new class extends Component {
+    use WithPagination;
+
     public string $search = '';
     public ?int $filterProductId = null;
+    public ?int $filterRegionId = null;
     public bool $showLowStockOnly = false;
     public bool $showOutOfStockOnly = false;
     public bool $showInStockOnly = false;
     public bool $showOnSaleOnly = false;
+    public int $perPage = 15;
+    public string $sortDirection = 'asc';
 
     public ?int $editingId = null;
     public ?int $deletingId = null;
@@ -40,14 +47,15 @@ new class extends Component {
     /**
      * Computed property para obtener las variantes filtradas
      */
-    public function with(ProductVariantService $variantService, ProductService $productService, TaxService $taxService): array
+    public function with(ProductVariantService $variantService, ProductService $productService, RegionService $regionService, TaxService $taxService): array
     {
         try {
-            $variants = $variantService->list(productId: $this->filterProductId, lowStockOnly: $this->showLowStockOnly, outOfStockOnly: $this->showOutOfStockOnly, inStockOnly: $this->showInStockOnly, onSaleOnly: $this->showOnSaleOnly, search: $this->search, include: ['product', 'tax']);
+            $variants = $variantService->list(productId: $this->filterProductId, regionId: $this->filterRegionId, lowStockOnly: $this->showLowStockOnly, outOfStockOnly: $this->showOutOfStockOnly, inStockOnly: $this->showInStockOnly, onSaleOnly: $this->showOnSaleOnly, search: $this->search, include: ['product', 'tax'], perPage: $this->perPage, sortDirection: $this->sortDirection);
 
             return [
                 'variants' => $variants,
                 'products' => $productService->getBySaleType('unit'),
+                'regions' => $regionService->getActive(),
                 'taxes' => $taxService->getAll(),
             ];
         } catch (\Exception $e) {
@@ -56,6 +64,7 @@ new class extends Component {
             return [
                 'variants' => collect(),
                 'products' => collect(),
+                'regions' => collect(),
                 'taxes' => collect(),
             ];
         }
@@ -66,32 +75,55 @@ new class extends Component {
      */
     public function updatedSearch()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedFilterProductId()
     {
+        $this->resetPage();
+        $this->resetMessages();
+    }
+
+    public function updatedFilterRegionId()
+    {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedShowLowStockOnly()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedShowOutOfStockOnly()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedShowInStockOnly()
     {
+        $this->resetPage();
         $this->resetMessages();
     }
 
     public function updatedShowOnSaleOnly()
     {
+        $this->resetPage();
         $this->resetMessages();
+    }
+
+    public function updatedPerPage()
+    {
+        $this->resetPage();
+    }
+
+    public function toggleSort()
+    {
+        $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        $this->resetPage();
     }
 
     /**
@@ -101,10 +133,12 @@ new class extends Component {
     {
         $this->search = '';
         $this->filterProductId = null;
+        $this->filterRegionId = null;
         $this->showLowStockOnly = false;
         $this->showOutOfStockOnly = false;
         $this->showInStockOnly = false;
         $this->showOnSaleOnly = false;
+        $this->resetPage();
         $this->resetMessages();
     }
 
@@ -376,10 +410,22 @@ new class extends Component {
                     @endforeach
                 </select>
             </div>
+
+            <!-- Region Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Región</label>
+                <select wire:model.live="filterRegionId"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Todas las regiones</option>
+                    @foreach ($regions as $region)
+                        <option value="{{ $region->id }}">{{ $region->name }}</option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
-        <div class="flex flex-wrap gap-3 items-center justify-between">
-            <div class="flex flex-wrap gap-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-6 flex-wrap">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" wire:model.live="showLowStockOnly"
                         class="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500">
@@ -405,10 +451,24 @@ new class extends Component {
                 </label>
             </div>
 
-            <button wire:click="clearFilters"
-                class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                Limpiar filtros
-            </button>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600">Mostrar</label>
+                    <select wire:model.live="perPage"
+                        class="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span class="text-sm text-gray-600">por página</span>
+                </div>
+
+                <button wire:click="clearFilters"
+                    class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                    Limpiar filtros
+                </button>
+            </div>
         </div>
     </div>
 
@@ -430,7 +490,14 @@ new class extends Component {
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Producto / Presentación
+                            <button wire:click="toggleSort" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors">
+                                Producto / Presentación
+                                @if ($sortDirection === 'asc')
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                @else
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                @endif
+                            </button>
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             SKU
@@ -546,6 +613,65 @@ new class extends Component {
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        @if ($variants instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-4">
+                <div class="text-sm text-gray-500">
+                    @if ($variants->total() > 0)
+                        Mostrando <span class="font-medium text-gray-700">{{ $variants->firstItem() }}</span>–<span
+                            class="font-medium text-gray-700">{{ $variants->lastItem() }}</span>
+                        de <span class="font-medium text-gray-700">{{ $variants->total() }}</span> variantes
+                    @else
+                        Sin resultados
+                    @endif
+                </div>
+
+                @if ($variants->hasPages())
+                    <div class="flex items-center gap-1">
+                        @if ($variants->onFirstPage())
+                            <span
+                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed select-none">
+                                ‹
+                            </span>
+                        @else
+                            <button wire:click="previousPage" wire:loading.attr="disabled"
+                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                                ‹
+                            </button>
+                        @endif
+
+                        @foreach ($variants->getUrlRange(1, $variants->lastPage()) as $page => $url)
+                            @if ($page == $variants->currentPage())
+                                <span
+                                    class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg select-none">
+                                    {{ $page }}
+                                </span>
+                            @elseif ($page == 1 || $page == $variants->lastPage() || abs($page - $variants->currentPage()) <= 2)
+                                <button wire:click="gotoPage({{ $page }})"
+                                    class="px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                                    {{ $page }}
+                                </button>
+                            @elseif (abs($page - $variants->currentPage()) == 3)
+                                <span class="px-2 py-1.5 text-sm text-gray-400 select-none">…</span>
+                            @endif
+                        @endforeach
+
+                        @if ($variants->hasMorePages())
+                            <button wire:click="nextPage" wire:loading.attr="disabled"
+                                class="px-3 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                                ›
+                            </button>
+                        @else
+                            <span
+                                class="px-3 py-1.5 text-sm text-gray-300 border border-gray-200 rounded-lg cursor-not-allowed select-none">
+                                ›
+                            </span>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        @endif
     </div>
 
     <!-- Edit Modal -->
