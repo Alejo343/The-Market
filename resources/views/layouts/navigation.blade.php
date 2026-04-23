@@ -44,6 +44,17 @@
         <div class="mt-6">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pedidos</h3>
 
+            <a href="/delivery-zones"
+                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('delivery-zones.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Zonas de Envío
+            </a>
+
             <a href="/orders" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('orders.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

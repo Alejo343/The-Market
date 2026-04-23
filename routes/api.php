@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\DeliveryZoneController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\MediaController;
@@ -62,6 +63,10 @@ Route::get('media/{media}', [MediaController::class, 'show']);
 Route::get('regions', [RegionController::class, 'index']);
 Route::get('regions/{region}/variants', [RegionController::class, 'variants']); // ← antes
 Route::get('regions/{region}', [RegionController::class, 'show']);              // ← después
+
+// Zonas de envío (lectura pública para el checkout)
+Route::get('delivery-zones', [DeliveryZoneController::class, 'index']);
+Route::post('checkout/delivery-zone/detect', [DeliveryZoneController::class, 'detect']);
 
 // Checkout / Wompi
 Route::get('checkout/acceptance', [CheckoutController::class, 'acceptance']);
@@ -141,6 +146,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('regions', [RegionController::class, 'store']);
     Route::put('regions/{region}', [RegionController::class, 'update']);
     Route::delete('regions/{region}', [RegionController::class, 'destroy']);
+
+    // Zonas de envío (escritura protegida)
+    Route::post('delivery-zones', [DeliveryZoneController::class, 'store']);
+    Route::put('delivery-zones/{deliveryZone}', [DeliveryZoneController::class, 'update']);
+    Route::delete('delivery-zones/{deliveryZone}', [DeliveryZoneController::class, 'destroy']);
 
     Route::post('products/{product}/media', [ProductMediaController::class, 'store']);
     Route::post('products/{product}/media/multiple', [ProductMediaController::class, 'storeMultiple']);

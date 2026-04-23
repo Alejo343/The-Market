@@ -11,18 +11,25 @@ class UploadProductImageRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'file'       => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
+            'alt'        => ['nullable', 'string', 'max:255'],
+            'is_primary' => ['boolean'],
+            'order'      => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'file.required' => 'Debe subir una imagen',
+            'file.mimes'    => 'El archivo debe ser una imagen (jpg, jpeg, png, gif, webp)',
+            'file.max'      => 'La imagen no puede exceder 5MB',
         ];
     }
 }

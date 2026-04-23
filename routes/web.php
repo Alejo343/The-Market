@@ -61,6 +61,9 @@ Route::middleware('auth')->group(function () {
     // Route::view('/reports/inventory', 'reports.inventory')->name('reports.inventory');
     // Route::view('/reports/price-history', 'reports.price-history')->name('reports.price-history');
 
+    // Zonas de envío
+    Route::livewire('/delivery-zones', 'pages::delivery-zone.index')->name('delivery-zones.index');
+
     // Pedidos (E-commerce / Wompi)
     Route::livewire('/orders', 'order.index')->name('orders.index');
     Route::livewire('/orders/{reference}', 'order.show')->name('orders.show');

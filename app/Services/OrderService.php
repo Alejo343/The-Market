@@ -21,20 +21,24 @@ class OrderService
         string $customerCity,
         array $items,
         int $totalAmountCents,
-        string $notes = ''
+        string $notes = '',
+        ?int $deliveryZoneId = null,
+        int $deliveryCostCents = 0
     ): Order {
         return Order::create([
-            'reference' => $reference,
-            'payment_method' => $paymentMethod,
-            'status' => 'PENDING',
-            'customer_email' => $customerEmail,
-            'customer_name' => $customerName,
-            'customer_phone' => $customerPhone,
-            'customer_address' => $customerAddress,
-            'customer_city' => $customerCity,
-            'items_data' => $items,
-            'total_amount_cents' => $totalAmountCents,
-            'notes' => $notes,
+            'reference'            => $reference,
+            'payment_method'       => $paymentMethod,
+            'status'               => 'PENDING',
+            'customer_email'       => $customerEmail,
+            'customer_name'        => $customerName,
+            'customer_phone'       => $customerPhone,
+            'customer_address'     => $customerAddress,
+            'customer_city'        => $customerCity,
+            'items_data'           => $items,
+            'total_amount_cents'   => $totalAmountCents,
+            'delivery_zone_id'     => $deliveryZoneId,
+            'delivery_cost_cents'  => $deliveryCostCents,
+            'notes'                => $notes,
         ]);
     }
 

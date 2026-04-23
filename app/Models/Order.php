@@ -18,12 +18,20 @@ class Order extends Model
         'customer_city',
         'items_data',
         'total_amount_cents',
+        'delivery_zone_id',
+        'delivery_cost_cents',
         'notes',
     ];
 
     protected $casts = [
-        'items_data' => 'json',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'items_data'           => 'json',
+        'delivery_cost_cents'  => 'integer',
+        'created_at'           => 'datetime',
+        'updated_at'           => 'datetime',
     ];
+
+    public function deliveryZone()
+    {
+        return $this->belongsTo(DeliveryZone::class);
+    }
 }
