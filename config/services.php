@@ -50,4 +50,13 @@ return [
         'business_number' => env('WHATSAPP_BUSINESS_NUMBER'),
     ],
 
+    'siigo' => [
+        'username'    => env('SIIGO_USERNAME'),
+        'access_key'  => env('SIIGO_ACCESS_KEY'),
+        'partner_id'  => env('SIIGO_PARTNER_ID', 'the-market'),
+        'api_url'     => env('SIIGO_API_URL', 'https://api.siigo.com'),
+        'company_key' => env('SIIGO_COMPANY_KEY'),
+        'webhook_url' => env('SIIGO_WEBHOOK_URL'),
+    ],
+
 ];

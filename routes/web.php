@@ -70,6 +70,9 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/payments/report', 'payments.report')->name('payments.report');
     Route::livewire('/inventory/dashboard', 'inventory.dashboard')->name('inventory.dashboard');
 
+    // Integraciones
+    Route::livewire('/siigo/monitor', 'siigo.monitor')->name('siigo.monitor');
+
     // Configuración
     // Route::view('/users', 'users.index')->name('users.index');
     // Route::view('/profile', 'profile.edit')->name('profile.edit');

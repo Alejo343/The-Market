@@ -220,6 +220,31 @@
             </a>
         </div>
 
+        <!-- INTEGRACIONES -->
+        <div class="mt-6">
+            <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Integraciones</h3>
+
+            @php
+                $siigoErrors = \App\Models\SiigoSyncLog::today()->errors()->count();
+            @endphp
+
+            <a href="{{ route('siigo.monitor') }}" wire:navigate
+                class="flex items-center justify-between px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('siigo.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+                <span class="flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Monitor Siigo
+                </span>
+                @if($siigoErrors > 0)
+                    <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">
+                        {{ $siigoErrors > 9 ? '9+' : $siigoErrors }}
+                    </span>
+                @endif
+            </a>
+        </div>
+
         <!-- CONFIGURACIÓN -->
         <div class="mt-6 mb-6">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Configuración</h3>

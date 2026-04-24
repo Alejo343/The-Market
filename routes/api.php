@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DeliveryZoneController;
+use App\Http\Controllers\Api\SiigoWebhookController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\InventoryMovementController;
 use App\Http\Controllers\Api\MediaController;
@@ -81,6 +82,7 @@ Route::get('checkout/orders/history', [CheckoutController::class, 'orderHistory'
 
 // Webhooks
 Route::post('webhooks/wompi/transaction', [WebhookController::class, 'wompiTransaction']);
+Route::post('webhooks/siigo/products', [SiigoWebhookController::class, 'handle']);
 
 // ============================================
 // RUTAS PROTEGIDAS (requieren autenticación)
