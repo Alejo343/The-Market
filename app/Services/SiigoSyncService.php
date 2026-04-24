@@ -124,6 +124,12 @@ class SiigoSyncService
             return 'skipped';
         }
 
+        // Solo productos físicos — excluir servicios
+        $type = $data['type'] ?? 'Product';
+        if (in_array($type, ['Service', 'ConsumerGood'])) {
+            return 'skipped';
+        }
+
         return DB::transaction(function () use ($data, $siigoCode, $siigoId) {
             $variant = ProductVariant::where('sku', $siigoCode)
                 ->orWhere('siigo_id', $siigoId)
@@ -153,10 +159,10 @@ class SiigoSyncService
             $changed = true;
         }
 
-        // Stock: usa available_quantity del payload
+        // Stock: usa available_quantity del payload, mínimo 0
         $newStock = $data['available_quantity'] ?? null;
-        if ($newStock !== null && $variant->stock !== (int) $newStock) {
-            $variant->stock = (int) $newStock;
+        if ($newStock !== null && $variant->stock !== max(0, (int) $newStock)) {
+            $variant->stock = max(0, (int) $newStock);
             $changed = true;
         }
 
@@ -215,7 +221,7 @@ class SiigoSyncService
             'sku'          => $siigoCode,
             'siigo_id'     => $siigoId,
             'price'        => $this->extractPrice($data) ?? 0,
-            'stock'        => (int) ($data['available_quantity'] ?? 0),
+            'stock'        => max(0, (int) ($data['available_quantity'] ?? 0)),
             'min_stock'    => 0,
             'tax_id'       => $tax?->id ?? Tax::first()?->id,
         ]);
