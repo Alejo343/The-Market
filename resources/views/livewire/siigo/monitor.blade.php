@@ -12,8 +12,9 @@ new class extends Component {
     public string $filterStatus   = '';
     public string $filterType     = '';
     public string $filterDate     = '';
-    public ?int   $expandedLog    = null;
-    public bool   $syncing        = false;
+    public ?int    $expandedLog    = null;
+    public bool    $syncing        = false;
+    public ?string $lastBatchId    = null;
 
     public function updatingFilterStatus(): void { $this->resetPage(); }
     public function updatingFilterType(): void   { $this->resetPage(); }
@@ -27,7 +28,8 @@ new class extends Component {
     public function syncNow(): void
     {
         $this->syncing = true;
-        Artisan::call('siigo:sync-updated');
+        Artisan::call('siigo:import-products');
+        $this->lastBatchId = SiigoSyncLog::whereNotNull('batch_id')->latest()->value('batch_id');
         $this->syncing = false;
         $this->resetPage();
     }
@@ -48,12 +50,17 @@ new class extends Component {
 
         $logs = $query->paginate(20);
 
-        $totalToday  = SiigoSyncLog::today()->count();
-        $errorsToday = SiigoSyncLog::today()->errors()->count();
-        $lastSuccess = SiigoSyncLog::where('status', 'success')->latest()->value('created_at');
-        $synced      = ProductVariant::whereNotNull('siigo_id')->count();
+        $totalToday    = SiigoSyncLog::today()->count();
+        $errorsToday   = SiigoSyncLog::today()->errors()->count();
+        $lastSuccess   = SiigoSyncLog::where('status', 'success')->latest()->value('created_at');
+        $synced        = ProductVariant::whereNotNull('siigo_id')->count();
 
-        return compact('logs', 'totalToday', 'errorsToday', 'lastSuccess', 'synced');
+        // Errores del último batch ejecutado manualmente
+        $lastBatchErrors = $this->lastBatchId
+            ? SiigoSyncLog::byBatch($this->lastBatchId)->errors()->get()
+            : collect();
+
+        return compact('logs', 'totalToday', 'errorsToday', 'lastSuccess', 'synced', 'lastBatchErrors');
     }
 }; ?>
 
@@ -101,6 +108,43 @@ new class extends Component {
             <p class="text-2xl font-bold text-indigo-600">{{ $synced }}</p>
         </div>
     </div>
+
+    {{-- Errores del último sync manual --}}
+    @if($lastBatchErrors->isNotEmpty())
+        <div class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <h2 class="text-sm font-semibold text-red-700 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {{ $lastBatchErrors->count() }} producto(s) fallaron en el último sync
+            </h2>
+            <div class="space-y-2">
+                @foreach($lastBatchErrors as $err)
+                    <div class="flex items-start gap-3 text-sm bg-white border border-red-100 rounded p-3">
+                        <span class="font-mono font-bold text-red-600 shrink-0">{{ $err->siigo_code ?? '—' }}</span>
+                        <span class="text-gray-600 truncate">{{ $err->message }}</span>
+                        @if($err->payload)
+                            <button wire:click="toggleExpand({{ $err->id }})" class="ml-auto text-xs text-blue-500 hover:underline shrink-0">
+                                {{ $expandedLog === $err->id ? 'Ocultar' : 'Ver payload' }}
+                            </button>
+                        @endif
+                    </div>
+                    @if($expandedLog === $err->id && $err->payload)
+                        <div class="bg-gray-900 rounded p-3">
+                            <pre class="text-xs text-green-300 overflow-x-auto max-h-48">{{ json_encode($err->payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+    @elseif($lastBatchId)
+        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Último sync completado sin errores.
+        </div>
+    @endif
 
     {{-- Filtros --}}
     <div class="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap gap-3 items-end">

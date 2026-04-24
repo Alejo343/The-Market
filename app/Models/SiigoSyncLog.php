@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SiigoSyncLog extends Model
 {
     protected $fillable = [
+        'batch_id',
         'event_type',
         'topic',
         'siigo_code',
@@ -28,8 +29,10 @@ class SiigoSyncLog extends Model
         ?string $siigoCode = null,
         ?string $siigoId = null,
         ?array $payload = null,
+        ?string $batchId = null,
     ): self {
         return self::create([
+            'batch_id'   => $batchId,
             'event_type' => $eventType,
             'status'     => $status,
             'message'    => $message,
@@ -38,6 +41,11 @@ class SiigoSyncLog extends Model
             'siigo_id'   => $siigoId,
             'payload'    => $payload,
         ]);
+    }
+
+    public function scopeByBatch($query, string $batchId)
+    {
+        return $query->where('batch_id', $batchId);
     }
 
     public function scopeErrors($query)

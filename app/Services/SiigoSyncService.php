@@ -9,6 +9,7 @@ use App\Models\Tax;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class SiigoSyncService
@@ -21,8 +22,9 @@ class SiigoSyncService
      */
     public function importAll(): array
     {
-        $counters = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0];
-        $page = 1;
+        $batchId  = (string) Str::uuid();
+        $counters = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0, 'batch_id' => $batchId];
+        $page     = 1;
 
         do {
             $response = Http::withHeaders($this->auth->headers())
@@ -32,7 +34,6 @@ class SiigoSyncService
                 ]);
 
             if (! $response->successful()) {
-                // Token expirado → refrescar y reintentar una vez
                 if ($response->status() === 401) {
                     $this->auth->forgetToken();
                     $response = Http::withHeaders($this->auth->headers())
@@ -43,7 +44,7 @@ class SiigoSyncService
                 }
 
                 if (! $response->successful()) {
-                    SiigoSyncLog::record('import', 'error', 'Error listando productos: ' . $response->body(), 'products.list');
+                    SiigoSyncLog::record('import', 'error', 'Error listando productos: ' . $response->body(), 'products.list', batchId: $batchId);
                     break;
                 }
             }
@@ -69,11 +70,11 @@ class SiigoSyncService
                         $item['code'] ?? null,
                         $item['id'] ?? null,
                         $item,
+                        $batchId,
                     );
                 }
             }
 
-            // Si vino menos de page_size, es la última página
             $hasMore = count($results) >= 100 && isset($body['results']);
             $page++;
         } while ($hasMore);
@@ -153,10 +154,15 @@ class SiigoSyncService
     {
         $changed = false;
 
-        // Actualizar siigo_id si faltaba
+        // Actualizar siigo_id si faltaba y no está tomado por otra variante
         if (! $variant->siigo_id && isset($data['id'])) {
-            $variant->siigo_id = $data['id'];
-            $changed = true;
+            $taken = ProductVariant::where('siigo_id', $data['id'])
+                ->where('id', '!=', $variant->id)
+                ->exists();
+            if (! $taken) {
+                $variant->siigo_id = $data['id'];
+                $changed = true;
+            }
         }
 
         // Stock: usa available_quantity del payload, mínimo 0
