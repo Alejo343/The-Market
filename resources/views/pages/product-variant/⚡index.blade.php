@@ -3,6 +3,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Services\ProductVariantService;
 use App\Services\ProductService;
+use App\Services\CategoryService;
 use App\Services\RegionService;
 use App\Services\TaxService;
 use App\Models\ProductVariant;
@@ -12,7 +13,7 @@ new class extends Component {
     use WithPagination;
 
     public string $search = '';
-    public ?int $filterProductId = null;
+    public ?int $filterCategoryId = null;
     public ?int $filterRegionId = null;
     public bool $showLowStockOnly = false;
     public bool $showOutOfStockOnly = false;
@@ -47,14 +48,15 @@ new class extends Component {
     /**
      * Computed property para obtener las variantes filtradas
      */
-    public function with(ProductVariantService $variantService, ProductService $productService, RegionService $regionService, TaxService $taxService): array
+    public function with(ProductVariantService $variantService, ProductService $productService, CategoryService $categoryService, RegionService $regionService, TaxService $taxService): array
     {
         try {
-            $variants = $variantService->list(productId: $this->filterProductId, regionId: $this->filterRegionId, lowStockOnly: $this->showLowStockOnly, outOfStockOnly: $this->showOutOfStockOnly, inStockOnly: $this->showInStockOnly, onSaleOnly: $this->showOnSaleOnly, search: $this->search, include: ['product', 'tax'], perPage: $this->perPage, sortDirection: $this->sortDirection);
+            $variants = $variantService->list(categoryId: $this->filterCategoryId, regionId: $this->filterRegionId, lowStockOnly: $this->showLowStockOnly, outOfStockOnly: $this->showOutOfStockOnly, inStockOnly: $this->showInStockOnly, onSaleOnly: $this->showOnSaleOnly, search: $this->search, include: ['product.region', 'product.category', 'tax'], perPage: $this->perPage, sortDirection: $this->sortDirection);
 
             return [
                 'variants' => $variants,
                 'products' => $productService->getBySaleType('unit'),
+                'categories' => $categoryService->getAll(),
                 'regions' => $regionService->getActive(),
                 'taxes' => $taxService->getAll(),
             ];
@@ -64,6 +66,7 @@ new class extends Component {
             return [
                 'variants' => collect(),
                 'products' => collect(),
+                'categories' => collect(),
                 'regions' => collect(),
                 'taxes' => collect(),
             ];
@@ -79,7 +82,7 @@ new class extends Component {
         $this->resetMessages();
     }
 
-    public function updatedFilterProductId()
+    public function updatedFilterCategoryId()
     {
         $this->resetPage();
         $this->resetMessages();
@@ -129,10 +132,16 @@ new class extends Component {
     /**
      * Limpia todos los filtros
      */
+    public function toggleProductActive(int $productId)
+    {
+        $product = \App\Models\Product::findOrFail($productId);
+        $product->update(['active' => !$product->active]);
+    }
+
     public function clearFilters()
     {
         $this->search = '';
-        $this->filterProductId = null;
+        $this->filterCategoryId = null;
         $this->filterRegionId = null;
         $this->showLowStockOnly = false;
         $this->showOutOfStockOnly = false;
@@ -399,14 +408,14 @@ new class extends Component {
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
 
-            <!-- Product Filter -->
+            <!-- Category Filter -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
-                <select wire:model.live="filterProductId"
+                <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                <select wire:model.live="filterCategoryId"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Todos los productos</option>
-                    @foreach ($products as $product)
-                        <option value="{{ $product->id }}">{{ $product->name }}</option>
+                    <option value="">Todas las categorías</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -503,7 +512,10 @@ new class extends Component {
                             SKU
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Código de Barras
+                            Región
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Categoría
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Precio
@@ -530,20 +542,14 @@ new class extends Component {
                                 <span class="text-sm text-gray-600">{{ $variant->sku ?? '-' }}</span>
                             </td>
                             <td class="px-6 py-4">
-                                @if ($variant->barcode)
-                                    <button wire:click="viewBarcode({{ $variant->id }})"
-                                        class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
-                                            </path>
-                                        </svg>
-                                        Ver código
-                                    </button>
-                                    <div class="text-xs text-gray-500 font-mono">{{ $variant->barcode }}</div>
-                                @else
-                                    <span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">Sin código</span>
-                                @endif
+                                <span class="text-sm text-gray-600">
+                                    {{ $variant->product->region?->name ?? '-' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-sm text-gray-600">
+                                    {{ $variant->product->category?->name ?? '-' }}
+                                </span>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-gray-900">
@@ -560,19 +566,11 @@ new class extends Component {
                                 <div class="text-xs text-gray-500">Mín: {{ $variant->min_stock }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                @if ($variant->stock <= 0)
-                                    <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
-                                        Sin stock
-                                    </span>
-                                @elseif($variant->stock <= $variant->min_stock)
-                                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                                        Stock bajo
-                                    </span>
-                                @else
-                                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                                        En stock
-                                    </span>
-                                @endif
+                                <button wire:click="toggleProductActive({{ $variant->product->id }})"
+                                    title="Clic para {{ $variant->product->active ? 'desactivar' : 'activar' }} el producto"
+                                    class="px-2 py-1 text-xs rounded-full transition-colors {{ $variant->product->active ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
+                                    {{ $variant->product->active ? 'Activo' : 'Inactivo' }}
+                                </button>
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2" wire:key="action-buttons-{{ $variant->id }}">
@@ -601,7 +599,7 @@ new class extends Component {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                                 @if ($search || $filterProductId || $showLowStockOnly || $showOutOfStockOnly || $showInStockOnly || $showOnSaleOnly)
                                     No se encontraron variantes con los filtros aplicados
                                 @else
