@@ -192,6 +192,11 @@ class SiigoSyncService
         return ($changed || $productChanged) ? 'updated' : 'skipped';
     }
 
+    private function defaultCategory(): int
+    {
+        return \App\Models\Category::firstOrCreate(['name' => 'Siigo'])->id;
+    }
+
     private function createProduct(array $data, string $siigoCode, ?string $siigoId): void
     {
         $product = Product::create([
@@ -199,6 +204,7 @@ class SiigoSyncService
             'description' => $data['description'] ?? null,
             'sale_type'   => 'unit',
             'active'      => $data['active'] ?? true,
+            'category_id' => $this->defaultCategory(),
         ]);
 
         $tax = $this->resolveTax($data);
