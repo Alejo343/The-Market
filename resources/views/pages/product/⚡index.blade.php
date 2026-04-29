@@ -140,6 +140,12 @@ new class extends Component {
         $this->resetPage();
     }
 
+    public function toggleActive(int $productId)
+    {
+        $product = Product::findOrFail($productId);
+        $product->update(['active' => !$product->active]);
+    }
+
     public function updatedFilterNoBrand()
     {
         $this->resetPage();
@@ -661,10 +667,11 @@ new class extends Component {
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-                                <span
-                                    class="px-2 py-1 text-xs rounded-full {{ $product->active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                <button wire:click="toggleActive({{ $product->id }})"
+                                    title="Clic para {{ $product->active ? 'desactivar' : 'activar' }} el producto"
+                                    class="px-2 py-1 text-xs rounded-full transition-colors {{ $product->active ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
                                     {{ $product->active ? 'Activo' : 'Inactivo' }}
-                                </span>
+                                </button>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="text-sm text-gray-600">

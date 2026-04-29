@@ -215,7 +215,7 @@ class SiigoSyncService
             'name'        => $data['name'],
             'description' => $data['description'] ?? null,
             'sale_type'   => 'unit',
-            'active'      => $data['active'] ?? true,
+            'active'      => false,
             'category_id' => $this->defaultCategory(),
         ]);
 
