@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(psql -U postgres -h localhost -c \"\\\\conninfo\")",
-      "Bash(PGPASSWORD=root psql -U postgres -h localhost -c \"\\\\conninfo\")"
+      "Bash(PGPASSWORD=root psql -U postgres -h localhost -c \"\\\\conninfo\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\database\\\\migrations\" -Filter \"*delivery*\" -Name)",
+      "Bash(Get-ChildItem -Recurse \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\resources\\\\views\" -Name)",
+      "Bash(Get-ChildItem -Recurse \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\app\\\\Livewire\" -Name)",
+      "Bash(Get-ChildItem -Recurse \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\app\\\\Http\\\\Controllers\" -Name)"
     ]
   }
 }
