@@ -417,11 +417,20 @@ new class extends Component {
 };
 ?>
 
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Productos</h1>
-        <p class="text-gray-600">Gestiona el catálogo de productos</p>
+<div class="container mx-auto px-0 sm:px-4 py-4 sm:py-8">
+    <!-- Header + acción -->
+    <div class="mb-6 flex items-start justify-between gap-4 px-4 sm:px-0">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Productos</h1>
+            <p class="text-sm text-gray-600">Gestiona el catálogo de productos</p>
+        </div>
+        <a href="/products/create"
+            class="shrink-0 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2 text-sm font-medium">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span class="hidden sm:inline">Nuevo Producto</span>
+        </a>
     </div>
 
     <!-- Messages -->
@@ -454,8 +463,8 @@ new class extends Component {
     @endif
 
     <!-- Filters -->
-    <div class="mb-6 bg-white rounded-lg shadow p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+    <div class="mb-6 bg-white rounded-lg shadow p-4 mx-0 sm:mx-0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
             <!-- Search -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
@@ -511,8 +520,8 @@ new class extends Component {
             </div>
         </div>
 
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-6 flex-wrap">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
                 <select wire:model.live="filterStatus"
                     class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">Todos los estados</option>
@@ -537,9 +546,9 @@ new class extends Component {
                 </label>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3 shrink-0">
                 <div class="flex items-center gap-2">
-                    <label class="text-sm text-gray-600">Mostrar</label>
+                    <label class="text-sm text-gray-600 whitespace-nowrap">Por página</label>
                     <select wire:model.live="perPage"
                         class="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="10">10</option>
@@ -547,26 +556,14 @@ new class extends Component {
                         <option value="25">25</option>
                         <option value="50">50</option>
                     </select>
-                    <span class="text-sm text-gray-600">por página</span>
                 </div>
 
                 <button wire:click="clearFilters"
-                    class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                    Limpiar filtros
+                    class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap">
+                    Limpiar
                 </button>
             </div>
         </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="mb-6 flex justify-end">
-        <a href="/products/create"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Nuevo Producto
-        </a>
     </div>
 
     <!-- Products Table -->
@@ -575,10 +572,10 @@ new class extends Component {
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Imagen
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             <button wire:click="toggleSort" class="inline-flex items-center gap-1 hover:text-gray-900 transition-colors">
                                 Nombre
                                 @if ($sortDirection === 'asc')
@@ -588,25 +585,25 @@ new class extends Component {
                                 @endif
                             </button>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Categoría
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Marca
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Región
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Tipo
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Estado
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Variantes/Lotes
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Acciones
                         </th>
                     </tr>
@@ -614,17 +611,17 @@ new class extends Component {
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($products as $product)
                         <tr class="hover:bg-gray-50 transition-colors" wire:key="product-{{ $product->id }}">
-                            <td class="px-6 py-4">
+                            <td class="px-3 sm:px-6 py-3 sm:py-4">
                                 @php
                                     $primaryImage = $product->media->where('pivot.is_primary', true)->first();
                                 @endphp
                                 @if ($primaryImage)
                                     <img src="{{ $primaryImage->url }}" alt="{{ $product->name }}"
-                                        class="w-16 h-16 object-cover rounded-lg border border-gray-200">
+                                        class="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg border border-gray-200">
                                 @else
                                     <div
-                                        class="w-16 h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
-                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
+                                        class="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                                        <svg class="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
@@ -633,58 +630,57 @@ new class extends Component {
                                     </div>
                                 @endif
                                 @if ($product->media_count > 1)
-                                    <div class="text-xs text-gray-500 mt-1">+{{ $product->media_count - 1 }} más</div>
+                                    <div class="text-xs text-gray-500 mt-1">+{{ $product->media_count - 1 }}</div>
                                 @endif
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-3 sm:px-6 py-3 sm:py-4">
                                 <div class="text-sm font-medium text-gray-900">
                                     {{ $product->name }}
                                 </div>
                                 @if ($product->description)
-                                    <div class="text-xs text-gray-500">{{ Str::limit($product->description, 50) }}
-                                    </div>
+                                    <div class="text-xs text-gray-500 hidden sm:block">{{ Str::limit($product->description, 50) }}</div>
                                 @endif
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="hidden md:table-cell px-6 py-4">
                                 <span class="text-sm text-gray-600">
                                     {{ $product->category?->name ?? '-' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="hidden lg:table-cell px-6 py-4">
                                 <span class="text-sm text-gray-600">
                                     {{ $product->brand?->name ?? '-' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="hidden lg:table-cell px-6 py-4">
                                 <span class="text-sm text-gray-600">
                                     {{ $product->region?->name ?? '-' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="hidden sm:table-cell px-6 py-4">
                                 <span
                                     class="px-2 py-1 text-xs rounded-full {{ $product->sale_type === 'unit' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
                                     {{ $product->sale_type === 'unit' ? 'Unidad' : 'Peso' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-3 sm:px-6 py-3 sm:py-4">
                                 <button wire:click="toggleActive({{ $product->id }})"
                                     title="Clic para {{ $product->active ? 'desactivar' : 'activar' }} el producto"
                                     class="px-2 py-1 text-xs rounded-full transition-colors {{ $product->active ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
                                     {{ $product->active ? 'Activo' : 'Inactivo' }}
                                 </button>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="hidden md:table-cell px-6 py-4">
                                 <span class="text-sm text-gray-600">
                                     {{ $product->sale_type === 'unit' ? ($product->variants_count ?? 0) . ' variantes' : ($product->weight_lots_count ?? 0) . ' lotes' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-2" wire:key="action-buttons-{{ $product->id }}">
+                            <td class="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                                <div class="flex justify-end gap-1 sm:gap-2" wire:key="action-buttons-{{ $product->id }}">
                                     @if ($product->sale_type === 'unit')
                                         <a href="{{ route('product-variants.create', ['product_id' => $product->id]) }}"
-                                            class="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                            class="p-1.5 sm:p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
                                             title="Agregar variante">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M12 4v16m8-8H4" />
@@ -692,9 +688,9 @@ new class extends Component {
                                         </a>
                                     @endif
                                     <button wire:click="edit({{ $product->id }})"
-                                        class="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                        class="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                                         title="Editar">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
@@ -702,9 +698,9 @@ new class extends Component {
                                         </svg>
                                     </button>
                                     <button wire:click="confirmDelete({{ $product->id }})"
-                                        class="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                        class="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
                                         title="Eliminar">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
@@ -716,7 +712,7 @@ new class extends Component {
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="9" class="px-4 py-8 text-center text-sm text-gray-500">
                                 @if ($search || $filterCategoryId || $filterBrandId || $filterSaleType)
                                     No se encontraron productos con los filtros aplicados
                                 @else
@@ -731,7 +727,7 @@ new class extends Component {
 
         <!-- Pagination -->
         @if ($products instanceof \Illuminate\Pagination\LengthAwarePaginator)
-            <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between gap-4">
+            <div class="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <!-- Contador -->
                 <div class="text-sm text-gray-500">
                     @if ($products->total() > 0)
@@ -745,7 +741,7 @@ new class extends Component {
 
                 <!-- Botones de página -->
                 @if ($products->hasPages())
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 flex-wrap">
                         {{-- Anterior --}}
                         @if ($products->onFirstPage())
                             <span

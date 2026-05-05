@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql -U postgres -h localhost -c \"\\\\conninfo\")",
+      "Bash(PGPASSWORD=root psql -U postgres -h localhost -c \"\\\\conninfo\")"
+    ]
+  }
+}
