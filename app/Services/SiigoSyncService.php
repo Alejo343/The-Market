@@ -64,7 +64,8 @@ class SiigoSyncService
                     $counters['errors']++;
                     Log::error('SiigoSync import error', ['code' => $item['code'] ?? '?', 'error' => $e->getMessage()]);
                     SiigoSyncLog::record(
-                        'import', 'error',
+                        'import',
+                        'error',
                         'Error sincronizando ' . ($item['code'] ?? '?') . ': ' . $e->getMessage(),
                         'products.import',
                         $item['code'] ?? null,
@@ -93,7 +94,8 @@ class SiigoSyncService
             $action = $this->syncProduct($payload);
 
             SiigoSyncLog::record(
-                'webhook', 'success',
+                'webhook',
+                'success',
                 "Producto {$action}: " . ($payload['code'] ?? '?'),
                 $topic,
                 $payload['code'] ?? null,
@@ -102,7 +104,8 @@ class SiigoSyncService
         } catch (Throwable $e) {
             Log::error('SiigoSync webhook error', ['payload' => $payload, 'error' => $e->getMessage()]);
             SiigoSyncLog::record(
-                'webhook', 'error',
+                'webhook',
+                'error',
                 $e->getMessage(),
                 $topic,
                 $payload['code'] ?? null,
@@ -131,7 +134,7 @@ class SiigoSyncService
             return 'skipped';
         }
 
-        // Excluir servicios logísticos por nombre
+        // solo productos físicos — excluir servicios
         $name = $data['name'] ?? '';
         if (stripos($name, 'SERVICIOS LOGISTICOS') === 0 || stripos($name, 'SEVICIOS LOGISTICOS') === 0) {
             return 'skipped';
