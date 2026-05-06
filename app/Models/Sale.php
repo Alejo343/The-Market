@@ -17,6 +17,10 @@ class Sale extends Model
         'subtotal',
         'tax_total',
         'total',
+        'siigo_invoice_id',
+        'customer_identification',
+        'customer_name',
+        'customer_email',
     ];
 
     protected $casts = [

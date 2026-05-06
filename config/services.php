@@ -51,12 +51,14 @@ return [
     ],
 
     'siigo' => [
-        'username'    => env('SIIGO_USERNAME'),
-        'access_key'  => env('SIIGO_ACCESS_KEY'),
-        'partner_id'  => env('SIIGO_PARTNER_ID', 'the-market'),
-        'api_url'     => env('SIIGO_API_URL', 'https://api.siigo.com'),
-        'company_key' => env('SIIGO_COMPANY_KEY'),
-        'webhook_url' => env('SIIGO_WEBHOOK_URL'),
+        'username'            => env('SIIGO_USERNAME'),
+        'access_key'          => env('SIIGO_ACCESS_KEY'),
+        'partner_id'          => env('SIIGO_PARTNER_ID', 'the-market'),
+        'api_url'             => env('SIIGO_API_URL', 'https://api.siigo.com'),
+        'company_key'         => env('SIIGO_COMPANY_KEY'),
+        'webhook_url'         => env('SIIGO_WEBHOOK_URL'),
+        'invoice_document_id' => env('SIIGO_INVOICE_DOCUMENT_ID'),
+        'payment_type_id'     => env('SIIGO_PAYMENT_TYPE_ID'),
     ],
 
 ];

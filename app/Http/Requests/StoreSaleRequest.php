@@ -14,11 +14,14 @@ class StoreSaleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'channel' => ['required', 'in:store,online'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.type' => ['required', 'in:variant,weight_lot'],
-            'items.*.id' => ['required', 'integer'],
-            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
+            'channel'                  => ['required', 'in:store,online'],
+            'items'                    => ['required', 'array', 'min:1'],
+            'items.*.type'             => ['required', 'in:variant,weight_lot'],
+            'items.*.id'               => ['required', 'integer'],
+            'items.*.quantity'         => ['required', 'numeric', 'min:0.001'],
+            'customer.identification'  => ['sometimes', 'string', 'max:20'],
+            'customer.name'            => ['sometimes', 'string', 'max:150'],
+            'customer.email'           => ['sometimes', 'nullable', 'email', 'max:100'],
         ];
     }
 

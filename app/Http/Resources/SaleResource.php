@@ -19,6 +19,12 @@ class SaleResource extends JsonResource
                 'name' => $this->user->name,
                 'email' => $this->user->email,
             ],
+            'siigo_invoice_id' => $this->siigo_invoice_id,
+            'customer' => [
+                'identification' => $this->customer_identification,
+                'name'           => $this->customer_name,
+                'email'          => $this->customer_email,
+            ],
             'subtotal' => (float) $this->subtotal,
             'tax_total' => (float) $this->tax_total,
             'total' => (float) $this->total,

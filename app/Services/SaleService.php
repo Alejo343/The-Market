@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\CreateSiigoInvoiceJob;
 use App\Jobs\SendWhatsAppJob;
 use App\Models\ProductVariant;
 use App\Models\Sale;
@@ -136,13 +137,18 @@ class SaleService
                 $taxTotal += $result['tax'];
             }
 
+            $customer = $data['customer'] ?? [];
+
             // Crear la venta
             $sale = Sale::create([
-                'channel' => $data['channel'],
-                'user_id' => $userId,
-                'subtotal' => $subtotal,
-                'tax_total' => $taxTotal,
-                'total' => $subtotal + $taxTotal,
+                'channel'                 => $data['channel'],
+                'user_id'                 => $userId,
+                'subtotal'                => $subtotal,
+                'tax_total'               => $taxTotal,
+                'total'                   => $subtotal + $taxTotal,
+                'customer_identification' => $customer['identification'] ?? null,
+                'customer_name'           => $customer['name'] ?? null,
+                'customer_email'          => $customer['email'] ?? null,
             ]);
 
             // Crear los items de venta
@@ -152,6 +158,8 @@ class SaleService
 
             // Cargar relaciones para la respuesta
             $sale->load(['user', 'items.item']);
+
+            CreateSiigoInvoiceJob::dispatch($sale->id)->delay(now()->addSeconds(3));
 
             SendWhatsAppJob::dispatch('notifyBusinessSaleCreated', [
                 $sale->id,
