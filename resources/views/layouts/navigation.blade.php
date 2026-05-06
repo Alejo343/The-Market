@@ -1,15 +1,28 @@
-<aside class="w-64 bg-gray-800 text-white min-h-screen">
-    <!-- Logo / Header -->
-    <div class="p-6 border-b border-gray-700">
-        <h2 class="text-2xl font-bold">Sistema Ventas</h2>
-        <p class="text-xs text-gray-400 mt-1">Panel de Administración</p>
+<aside class="fixed inset-y-0 left-0 z-40 w-64 bg-gray-800 text-white flex flex-col
+             transform transition-transform duration-300 ease-in-out
+             lg:static lg:translate-x-0 lg:z-auto lg:shrink-0"
+       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+
+    {{-- Logo / Header --}}
+    <div class="flex items-center justify-between px-6 py-5 border-b border-gray-700 shrink-0">
+        <div>
+            <h2 class="text-xl font-bold leading-tight">Sistema Ventas</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Panel de Administración</p>
+        </div>
+        {{-- Botón cerrar (solo móvil) --}}
+        <button @click="sidebarOpen = false"
+            class="lg:hidden text-gray-400 hover:text-white transition-colors p-1 rounded shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
     </div>
 
-    <nav class="mt-6 px-3">
-        <!-- Dashboard -->
+    <nav class="flex-1 overflow-y-auto py-4 px-3">
+        {{-- Dashboard --}}
         <a href="{{ route('dashboard') }}"
             class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
                 </path>
@@ -17,13 +30,13 @@
             Dashboard
         </a>
 
-        <!-- VENTAS -->
-        <div class="mt-6">
+        {{-- VENTAS --}}
+        <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ventas</h3>
 
             <a href="{{ route('sales.create') }}"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('sales.create') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
                 Nueva Venta (POS)
@@ -31,7 +44,7 @@
 
             <a href="/reports/sales" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('sales.index') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
                     </path>
@@ -40,13 +53,13 @@
             </a>
         </div>
 
-        <!-- PEDIDOS (E-COMMERCE) -->
-        <div class="mt-6">
+        {{-- PEDIDOS (E-COMMERCE) --}}
+        <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pedidos</h3>
 
             <a href="/delivery-zones"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('delivery-zones.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -57,7 +70,7 @@
 
             <a href="/orders" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('orders.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                 </svg>
                 Órdenes
@@ -65,7 +78,7 @@
 
             <a href="/payments/report" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('payments.report') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Reportes de Pago
@@ -73,20 +86,20 @@
 
             <a href="/inventory/dashboard" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('inventory.dashboard') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Dashboard Inventario
             </a>
         </div>
 
-        <!-- INVENTARIO -->
-        <div class="mt-6">
+        {{-- INVENTARIO --}}
+        <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Inventario</h3>
 
             <a href="/products" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('products.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                 </svg>
@@ -95,7 +108,7 @@
 
             <a href="/product-variants" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('variants.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
                     </path>
@@ -105,7 +118,7 @@
 
             <a href="/weight-lots" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('weight-lots.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3">
                     </path>
@@ -115,7 +128,7 @@
 
             <a href="/inventory/movements" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('inventory.movements') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                 </svg>
@@ -124,7 +137,7 @@
 
             <a href="{{ route('inventory.alerts') }}"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('inventory.alerts') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
                     </path>
@@ -133,13 +146,13 @@
             </a>
         </div>
 
-        <!-- CATÁLOGO -->
-        <div class="mt-6">
+        {{-- CATÁLOGO --}}
+        <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Catálogo</h3>
 
             <a href="/categories" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('categories.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
                 </svg>
@@ -148,7 +161,7 @@
 
             <a href="/regions" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('regions.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20">
                     </path>
@@ -158,7 +171,7 @@
 
             <a href="/brands" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('brands.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01">
                     </path>
@@ -168,7 +181,7 @@
 
             <a href="/taxes" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('taxes.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z">
                     </path>
@@ -177,13 +190,13 @@
             </a>
         </div>
 
-        <!-- REPORTES -->
-        <div class="mt-6">
+        {{-- REPORTES --}}
+        <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Reportes</h3>
 
             <a href="/reports/sales" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('reports.sales') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
                     </path>
@@ -191,18 +204,18 @@
                 Ventas por Período
             </a>
 
-            <a href=#
+            <a href="#"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                 </svg>
                 Productos Más Vendidos
             </a>
 
-            <a href=#
+            <a href="#"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
                     </path>
@@ -210,9 +223,9 @@
                 Inventario Actual
             </a>
 
-            <a href=#
+            <a href="#"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -220,8 +233,8 @@
             </a>
         </div>
 
-        <!-- INTEGRACIONES -->
-        <div class="mt-6">
+        {{-- INTEGRACIONES --}}
+        <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Integraciones</h3>
 
             @php
@@ -231,27 +244,27 @@
             <a href="{{ route('siigo.monitor') }}" wire:navigate
                 class="flex items-center justify-between px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('siigo.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <span class="flex items-center">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                     </svg>
                     Monitor Siigo
                 </span>
                 @if($siigoErrors > 0)
-                    <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">
+                    <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full shrink-0">
                         {{ $siigoErrors > 9 ? '9+' : $siigoErrors }}
                     </span>
                 @endif
             </a>
         </div>
 
-        <!-- CONFIGURACIÓN -->
-        <div class="mt-6 mb-6">
+        {{-- CONFIGURACIÓN --}}
+        <div class="mt-5 mb-6">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Configuración</h3>
 
             <a href="{{ route('users.index') }}"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('users.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
                     </path>
@@ -259,9 +272,9 @@
                 Usuarios
             </a>
 
-            <a href=#
+            <a href="#"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
