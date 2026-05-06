@@ -131,6 +131,12 @@ class SiigoSyncService
             return 'skipped';
         }
 
+        // Excluir servicios logísticos por nombre
+        $name = $data['name'] ?? '';
+        if (stripos($name, 'SERVICIOS LOGISTICOS') === 0 || stripos($name, 'SEVICIOS LOGISTICOS') === 0) {
+            return 'skipped';
+        }
+
         return DB::transaction(function () use ($data, $siigoCode, $siigoId) {
             $variant = ProductVariant::where('sku', $siigoCode)
                 ->orWhere('siigo_id', $siigoId)
