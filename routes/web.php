@@ -73,7 +73,8 @@ Route::middleware('auth')->group(function () {
     // Integraciones
     Route::livewire('/siigo/monitor', 'siigo.monitor')->name('siigo.monitor');
 
-    // Configuración
-    // Route::view('/users', 'users.index')->name('users.index');
-    // Route::view('/profile', 'profile.edit')->name('profile.edit');
+    // Configuración (solo admin)
+    Route::middleware('admin')->group(function () {
+        Route::livewire('/users', 'pages::user.index')->name('admin.users');
+    });
 });

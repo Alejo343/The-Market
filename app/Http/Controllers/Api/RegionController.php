@@ -45,7 +45,7 @@ class RegionController extends Controller
     public function variants(Request $request, Region $region): AnonymousResourceCollection
     {
         $variants = ProductVariant::whereHas('product', function ($query) use ($region) {
-            $query->where('region_id', $region->id);
+            $query->where('region_id', $region->id)->active();
         })
             ->with(['product.media', 'tax'])
             ->paginate($request->integer('per_page', 15));

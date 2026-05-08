@@ -28,11 +28,11 @@ class ProductVariantController extends Controller
             categoryId: $request->filled('category_id')
                 ? $request->integer('category_id')
                 : null,
-
             lowStockOnly: $request->boolean('low_stock_only'),
             outOfStockOnly: $request->boolean('out_of_stock_only'),
             inStockOnly: $request->boolean('in_stock_only'),
             onSaleOnly: $request->boolean('on_sale_only'),
+            activeOnly: true,
             search: $request->filled('search')
                 ? $request->input('search')
                 : null,
@@ -72,9 +72,11 @@ class ProductVariantController extends Controller
             ? explode(',', $request->input('include'))
             : null;
 
-        return new ProductVariantResource(
-            $this->service->show($productVariant, $include)
-        );
+        $variant = $this->service->show($productVariant, $include);
+
+        abort_unless($variant->product?->active, 404);
+
+        return new ProductVariantResource($variant);
     }
 
     public function update(UpdateProductVariantRequest $request, ProductVariant $productVariant): ProductVariantResource

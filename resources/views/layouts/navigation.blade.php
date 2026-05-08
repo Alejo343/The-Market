@@ -262,8 +262,9 @@
         <div class="mt-5 mb-6">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Configuración</h3>
 
-            <a href="{{ route('users.index') }}"
-                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('users.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+            @if (auth()->user()?->isAdmin())
+            <a href="{{ route('admin.users') }}" wire:navigate
+                class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('admin.users*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
@@ -271,6 +272,7 @@
                 </svg>
                 Usuarios
             </a>
+            @endif
 
             <a href="#"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors text-gray-300 hover:bg-gray-700">

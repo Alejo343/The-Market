@@ -21,12 +21,17 @@ class ProductVariantService
         bool $outOfStockOnly = false,
         bool $inStockOnly = false,
         bool $onSaleOnly = false,
+        bool $activeOnly = false,
         ?string $search = null,
         ?array $include = null,
         int $perPage = 0,
         string $sortDirection = 'asc'
     ): Collection|LengthAwarePaginator {
         $query = ProductVariant::query();
+
+        if ($activeOnly) {
+            $query->whereHas('product', fn($q) => $q->active());
+        }
 
         if ($productId) {
             $query->where('product_id', $productId);
@@ -140,7 +145,9 @@ class ProductVariantService
 
     public function findByBarcode(string $barcode): ?ProductVariant
     {
-        $variant = ProductVariant::where('barcode', $barcode)->first();
+        $variant = ProductVariant::where('barcode', $barcode)
+            ->whereHas('product', fn($q) => $q->active())
+            ->first();
 
         if ($variant) {
             $variant->load(['product', 'tax']);

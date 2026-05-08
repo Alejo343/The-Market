@@ -34,7 +34,7 @@ class ProductController extends Controller
             saleType: $request->filled('sale_type')
                 ? $request->input('sale_type')
                 : null,
-            activeOnly: $request->boolean('active_only'),
+            status: 'active',
             search: $request->filled('search')
                 ? $request->input('search')
                 : null,
@@ -59,6 +59,8 @@ class ProductController extends Controller
 
     public function show(Request $request, Product $product): ProductResource
     {
+        abort_unless($product->active, 404);
+
         $include = $request->has('include')
             ? explode(',', $request->input('include'))
             : null;
