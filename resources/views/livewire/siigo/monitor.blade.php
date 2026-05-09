@@ -204,8 +204,13 @@ new class extends Component {
                                 {{ ucfirst($log->event_type) }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600 font-mono text-xs max-w-[160px] truncate" title="{{ $log->topic }}">
-                            {{ $log->topic ?? '—' }}
+                        <td class="px-4 py-3 text-gray-600 text-xs max-w-[160px] truncate" title="{{ $log->topic }}">
+                            {{ match($log->topic) {
+                                'public.siigoapi.products.create'       => 'Creación',
+                                'public.siigoapi.products.update'       => 'Actualización',
+                                'public.siigoapi.products.stock.update' => 'Actualización de stock',
+                                default => $log->topic ?? '—',
+                            } }}
                         </td>
                         <td class="px-4 py-3 font-mono text-gray-700">{{ $log->siigo_code ?? '—' }}</td>
                         <td class="px-4 py-3">

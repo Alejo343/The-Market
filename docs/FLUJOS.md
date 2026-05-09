@@ -231,7 +231,13 @@
             │   {
             │     topic: "public.siigoapi.products.create|update|stock.update",
             │     company_key: "INVERSIONESGRUPOMARKETSAS",
-            │     id: "...", code: "SKU001", name: "...", ...
+            │     username: "...",
+            │     resources: [          ← los productos van aquí, no en la raíz
+            │       { id: "...", code: "SKU001", name: "...", active: true,
+            │         available_quantity: 3,
+            │         prices: [{ currency_code:"COP", price_list:[{value:...}] }],
+            │         taxes: [{ percentage: 19 }], type: "Product", ... }
+            │     ]
             │   }
             │
             SiigoWebhookController::handle()
