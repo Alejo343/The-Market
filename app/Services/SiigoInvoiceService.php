@@ -55,6 +55,7 @@ class SiigoInvoiceService
                 'identification' => $sale->customer_identification ?? '222222222',
                 'branch_office'  => 0,
             ],
+            'seller'   => (int) config('services.siigo.seller_id'),
             'date'     => $sale->created_at->format('Y-m-d'),
             'items'    => $this->buildItems($sale),
             'payments' => [

@@ -59,6 +59,7 @@ return [
         'webhook_url'         => env('SIIGO_WEBHOOK_URL'),
         'invoice_document_id' => env('SIIGO_INVOICE_DOCUMENT_ID'),
         'payment_type_id'     => env('SIIGO_PAYMENT_TYPE_ID'),
+        'seller_id'           => env('SIIGO_SELLER_ID'),
     ],
 
 ];

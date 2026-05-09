@@ -14,7 +14,11 @@
       "PowerShell(php artisan tinker --execute=\"echo \\\\App\\\\Models\\\\Product::find\\(412\\)->toJson\\(\\);\")",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\app\" -Directory)",
       "Bash(Select-Object Name)",
-      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\" -Depth 0 -Force)"
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\" -Depth 0 -Force)",
+      "WebSearch",
+      "WebFetch(domain:soporte.wompi.co)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }
