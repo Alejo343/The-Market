@@ -90,33 +90,38 @@ class SiigoSyncService
     {
         $topic = $payload['topic'] ?? 'unknown';
 
-        try {
-            [$action, $reason] = $this->syncProduct($payload);
+        // Siigo envía los productos dentro de resources[]
+        $resources = $payload['resources'] ?? [$payload];
 
-            $identifier = $payload['code'] ?? $payload['id'] ?? '?';
-            $name       = isset($payload['name']) ? " ({$payload['name']})" : '';
-            $message    = "Producto {$action}: {$identifier}{$name}" . ($reason ? " — {$reason}" : '');
+        foreach ($resources as $data) {
+            try {
+                [$action, $reason] = $this->syncProduct($data);
 
-            SiigoSyncLog::record(
-                'webhook',
-                $action === 'skipped' ? 'skipped' : 'success',
-                $message,
-                $topic,
-                $payload['code'] ?? null,
-                $payload['id'] ?? null,
-                $payload,
-            );
-        } catch (Throwable $e) {
-            Log::error('SiigoSync webhook error', ['payload' => $payload, 'error' => $e->getMessage()]);
-            SiigoSyncLog::record(
-                'webhook',
-                'error',
-                $e->getMessage(),
-                $topic,
-                $payload['code'] ?? null,
-                $payload['id'] ?? null,
-                $payload,
-            );
+                $identifier = $data['code'] ?? $data['id'] ?? '?';
+                $name       = isset($data['name']) ? " ({$data['name']})" : '';
+                $message    = "Producto {$action}: {$identifier}{$name}" . ($reason ? " — {$reason}" : '');
+
+                SiigoSyncLog::record(
+                    'webhook',
+                    $action === 'skipped' ? 'skipped' : 'success',
+                    $message,
+                    $topic,
+                    $data['code'] ?? null,
+                    $data['id'] ?? null,
+                    $data,
+                );
+            } catch (Throwable $e) {
+                Log::error('SiigoSync webhook error', ['payload' => $data, 'error' => $e->getMessage()]);
+                SiigoSyncLog::record(
+                    'webhook',
+                    'error',
+                    $e->getMessage(),
+                    $topic,
+                    $data['code'] ?? null,
+                    $data['id'] ?? null,
+                    $data,
+                );
+            }
         }
     }
 
