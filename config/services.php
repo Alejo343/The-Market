@@ -50,6 +50,10 @@ return [
         'business_number' => env('WHATSAPP_BUSINESS_NUMBER'),
     ],
 
+    'ecommerce' => [
+        'user_id' => env('ECOMMERCE_USER_ID'),
+    ],
+
     'siigo' => [
         'username'            => env('SIIGO_USERNAME'),
         'access_key'          => env('SIIGO_ACCESS_KEY'),

@@ -15,7 +15,8 @@ class StoreSaleRequest extends FormRequest
     {
         return [
             'channel'                  => ['required', 'in:store,online'],
-            'items'                    => ['required', 'array', 'min:1'],
+            'order_reference'          => ['sometimes', 'nullable', 'string', 'max:50'],
+            'items'                    => ['required_without:order_reference', 'array', 'min:1'],
             'items.*.type'             => ['required', 'in:variant,weight_lot'],
             'items.*.id'               => ['required', 'integer'],
             'items.*.quantity'         => ['required', 'numeric', 'min:0.001'],

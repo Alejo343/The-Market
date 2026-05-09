@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Jobs\SendWhatsAppJob;
 use App\Models\Order;
+use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
     public function __construct(
-        protected OrderInventoryService $inventoryService
+        protected OrderInventoryService $inventoryService,
+        protected SaleService $saleService,
     ) {}
 
     public function createPendingOrder(
@@ -74,6 +76,14 @@ class OrderService
         if ($oldStatus !== 'APPROVED' && $status === 'APPROVED') {
             $this->inventoryService->processApprovedOrder($order);
             $this->dispatchOrderApprovedNotifications($order);
+            try {
+                $this->saleService->createFromOrder($order);
+            } catch (\Throwable $e) {
+                Log::error('Sale creation from order failed', [
+                    'order_reference' => $order->reference,
+                    'error'           => $e->getMessage(),
+                ]);
+            }
         } elseif ($oldStatus === 'APPROVED' && in_array($status, ['DECLINED', 'VOIDED', 'ERROR'])) {
             $this->inventoryService->restoreRejectedOrder($order);
         }

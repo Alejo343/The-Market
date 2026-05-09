@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSaleRequest;
 use App\Http\Resources\SaleResource;
+use App\Models\Order;
 use App\Models\Sale;
 use App\Services\SaleService;
 use Illuminate\Http\JsonResponse;
@@ -48,6 +49,19 @@ class SaleController extends Controller
     public function store(StoreSaleRequest $request): JsonResponse
     {
         try {
+            // Canal online con order_reference: idempotente vía webhook
+            if ($request->input('channel') === 'online' && $request->filled('order_reference')) {
+                $order = Order::where('reference', $request->input('order_reference'))
+                    ->where('status', 'APPROVED')
+                    ->firstOrFail();
+
+                $sale = $this->service->createFromOrder($order);
+
+                return (new SaleResource($sale))
+                    ->response()
+                    ->setStatusCode(201);
+            }
+
             $sale = $this->service->create(
                 $request->validated(),
                 $request->user()->id

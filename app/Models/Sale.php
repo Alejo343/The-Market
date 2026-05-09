@@ -13,6 +13,7 @@ class Sale extends Model
 
     protected $fillable = [
         'channel',
+        'order_reference',
         'user_id',
         'subtotal',
         'tax_total',

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Jobs\CreateSiigoInvoiceJob;
 use App\Jobs\SendWhatsAppJob;
+use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Sale;
 use App\Models\WeightLot;
@@ -104,6 +105,87 @@ class SaleService
     public function getBetweenDates(string $startDate, string $endDate): Collection
     {
         return $this->list(startDate: $startDate, endDate: $endDate);
+    }
+
+    /**
+     * Crea una venta desde una Order aprobada (sin descontar stock — ya lo hizo el webhook de Wompi)
+     * Idempotente: si ya existe una Sale para esa orden la devuelve sin crear otra.
+     */
+    public function createFromOrder(Order $order): Sale
+    {
+        $existing = Sale::where('order_reference', $order->reference)->first();
+        if ($existing) {
+            return $existing->loadMissing(['user', 'items.item']);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $subtotal  = 0;
+            $taxTotal  = 0;
+            $saleItems = [];
+
+            foreach ($order->items_data as $item) {
+                $variantId = $item['variantId'] ?? null;
+                $quantity  = (int) ($item['quantity'] ?? 0);
+                $price     = (float) ($item['price'] ?? 0);
+
+                if (! $variantId || $quantity <= 0) {
+                    continue;
+                }
+
+                $variant = ProductVariant::with('tax')->find($variantId);
+                if (! $variant) {
+                    continue;
+                }
+
+                $itemSubtotal = $price * $quantity;
+                $itemTax      = $variant->tax ? $variant->tax->calculateTaxAmount($itemSubtotal) : 0;
+
+                $saleItems[] = [
+                    'item_type' => ProductVariant::class,
+                    'item_id'   => $variantId,
+                    'quantity'  => $quantity,
+                    'price'     => $price,
+                    'subtotal'  => $itemSubtotal,
+                ];
+
+                $subtotal += $itemSubtotal;
+                $taxTotal += $itemTax;
+            }
+
+            $sale = Sale::create([
+                'order_reference'         => $order->reference,
+                'channel'                 => 'online',
+                'user_id'                 => config('services.ecommerce.user_id'),
+                'subtotal'                => $subtotal,
+                'tax_total'               => $taxTotal,
+                'total'                   => $subtotal + $taxTotal,
+                'customer_identification' => $order->customer_identification,
+                'customer_name'           => $order->customer_name,
+                'customer_email'          => $order->customer_email,
+            ]);
+
+            $sale->items()->createMany($saleItems);
+
+            DB::commit();
+
+            $sale->load(['user', 'items.item']);
+
+            CreateSiigoInvoiceJob::dispatch($sale->id)->delay(now()->addSeconds(3));
+
+            SendWhatsAppJob::dispatch('notifyBusinessSaleCreated', [
+                $sale->id,
+                $order->customer_name ?? 'Online',
+                (float) $sale->total,
+                count($saleItems),
+            ]);
+
+            return $sale;
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     /**
