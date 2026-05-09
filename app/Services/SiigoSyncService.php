@@ -208,6 +208,12 @@ class SiigoSyncService
             }
         }
 
+        // Actualizar SKU si cambió en Siigo
+        if (isset($data['code']) && $variant->sku !== $data['code']) {
+            $variant->sku = $data['code'];
+            $changed = true;
+        }
+
         // Stock: usa available_quantity del payload, mínimo 0
         $newStock = $data['available_quantity'] ?? null;
         if ($newStock !== null && $variant->stock !== max(0, (int) $newStock)) {
