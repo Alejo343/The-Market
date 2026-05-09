@@ -58,7 +58,7 @@ class SiigoSyncService
 
             foreach ($results as $item) {
                 try {
-                    $action = $this->syncProduct($item);
+                    [$action] = $this->syncProduct($item);
                     $counters[$action]++;
                 } catch (Throwable $e) {
                     $counters['errors']++;
@@ -91,15 +91,20 @@ class SiigoSyncService
         $topic = $payload['topic'] ?? 'unknown';
 
         try {
-            $action = $this->syncProduct($payload);
+            [$action, $reason] = $this->syncProduct($payload);
+
+            $identifier = $payload['code'] ?? $payload['id'] ?? '?';
+            $name       = isset($payload['name']) ? " ({$payload['name']})" : '';
+            $message    = "Producto {$action}: {$identifier}{$name}" . ($reason ? " — {$reason}" : '');
 
             SiigoSyncLog::record(
                 'webhook',
-                'success',
-                "Producto {$action}: " . ($payload['code'] ?? '?'),
+                $action === 'skipped' ? 'skipped' : 'success',
+                $message,
                 $topic,
                 $payload['code'] ?? null,
                 $payload['id'] ?? null,
+                $payload,
             );
         } catch (Throwable $e) {
             Log::error('SiigoSync webhook error', ['payload' => $payload, 'error' => $e->getMessage()]);
@@ -119,43 +124,56 @@ class SiigoSyncService
      * Sincroniza un producto Siigo con el sistema local.
      * Retorna 'created', 'updated' o 'skipped'.
      */
-    public function syncProduct(array $data): string
+    /**
+     * Retorna [action, reason]: action = 'created'|'updated'|'skipped', reason = string explicativo.
+     */
+    public function syncProduct(array $data): array
     {
         $siigoCode = $data['code'] ?? null;
         $siigoId   = $data['id'] ?? null;
 
-        if (! $siigoCode) {
-            return 'skipped';
+        if (! $siigoCode && ! $siigoId) {
+            return ['skipped', 'sin código ni id'];
         }
 
         // Solo productos físicos — excluir servicios
         $type = $data['type'] ?? 'Product';
         if (in_array($type, ['Service', 'ConsumerGood'])) {
-            return 'skipped';
+            return ['skipped', "tipo excluido: {$type}"];
         }
 
-        // solo productos físicos — excluir servicios
         $name = $data['name'] ?? '';
         if (stripos($name, 'SERVICIOS LOGISTICOS') === 0 || stripos($name, 'SEVICIOS LOGISTICOS') === 0) {
-            return 'skipped';
+            return ['skipped', 'nombre excluido: servicio logístico'];
         }
 
         return DB::transaction(function () use ($data, $siigoCode, $siigoId) {
-            $variant = ProductVariant::where('sku', $siigoCode)
-                ->orWhere('siigo_id', $siigoId)
-                ->first();
+            $variant = ProductVariant::where(function ($q) use ($siigoCode, $siigoId) {
+                if ($siigoCode) {
+                    $q->where('sku', $siigoCode);
+                }
+                if ($siigoId) {
+                    $q->orWhere('siigo_id', $siigoId);
+                }
+            })->first();
 
             if ($variant) {
-                return $this->updateVariant($variant, $data);
+                $action = $this->updateVariant($variant, $data);
+                return [$action, null];
+            }
+
+            // Sin code no podemos crear (payload incompleto, e.g. stock.update solo con id)
+            if (! $siigoCode) {
+                return ['skipped', 'id desconocido localmente y sin code para crear'];
             }
 
             // Solo crear si el producto está activo en Siigo
             if (isset($data['active']) && $data['active'] === false) {
-                return 'skipped';
+                return ['skipped', 'producto inactivo en Siigo'];
             }
 
             $this->createProduct($data, $siigoCode, $siigoId);
-            return 'created';
+            return ['created', null];
         });
     }
 

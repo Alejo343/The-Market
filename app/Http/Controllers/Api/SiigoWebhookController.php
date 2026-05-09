@@ -38,6 +38,9 @@ class SiigoWebhookController extends Controller
             return response()->json(['received' => true]);
         }
 
+        // Log de recepción para depuración — ver qué campos manda Siigo
+        SiigoSyncLog::record('webhook', 'success', 'Webhook recibido: ' . $topic, $topic, $payload['code'] ?? null, $payload['id'] ?? null, $payload);
+
         ProcessSiigoWebhook::dispatch($payload);
 
         return response()->json(['received' => true]);
