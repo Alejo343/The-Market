@@ -119,10 +119,11 @@
     └─ Polling → GET /api/checkout/orders/{reference}/status
 
     Si APPROVED:
-        ├─ POST /api/sales  (Next.js API Route)
+        ├─ POST /api/sales  (Next.js API Route)  ← secundario / idempotente
         │       Authorization: Bearer API_TOKEN
         │       body: {
         │           channel: "online",
+        │           order_reference: o.reference,     ← vincula con la Order
         │           items: [{ type:"variant", id, quantity }],
         │           customer: {
         │               identification: o.customer.identification,
@@ -134,11 +135,10 @@
         │   [Next.js server → Laravel]
         │   POST https://api.thebarrilmarket.com/api/sales
         │       └─ SaleController::store()
-        │           └─ SaleService::create()
-        │               ├─ Descuenta stock (ProductVariant o WeightLot)
-        │               ├─ Crea Sale + SaleItems en BD
-        │               ├─ Dispatch CreateSiigoInvoiceJob (delay 3s)
-        │               └─ Dispatch SendWhatsAppJob
+        │           Si order_reference presente y Order APPROVED:
+        │               └─ SaleService::createFromOrder()  ← devuelve Sale existente
+        │           Si no (canal store / POS):
+        │               └─ SaleService::create()  ← flujo original
         │
         ├─ clearCart()
         └─ localStorage.removeItem("barril-pending-order")
@@ -165,24 +165,25 @@
                 │
                 Si PENDING → APPROVED:
                 │   ├─ OrderInventoryService::processApprovedOrder()
-                │   │       Descuenta stock de cada item en items_data
-                │   └─ Dispatch SendWhatsAppJob (notificaciones negocio + cliente)
+                │   │       Descuenta stock de cada item en items_data  ← única vez
+                │   ├─ Dispatch SendWhatsAppJob (notificaciones negocio + cliente)
+                │   └─ SaleService::createFromOrder()
+                │           ├─ Crea Sale + SaleItems en BD (sin tocar stock)
+                │           ├─ Guarda order_reference para idempotencia
+                │           ├─ Dispatch CreateSiigoInvoiceJob (delay 3s)
+                │           └─ Dispatch SendWhatsAppJob (notificación venta)
                 │
                 Si APPROVED → DECLINED/VOIDED/ERROR:
                     └─ OrderInventoryService::restoreRejectedOrder()
                             Restaura stock
 ```
 
-> **Nota:** El stock puede decrementarse dos veces si el webhook de Wompi llega
-> antes de que el frontend llame `POST /api/sales`. Revisar si `processApprovedOrder`
-> y `SaleService::create` no duplican el descuento.
-
 ---
 
 ## 4. Facturación electrónica (Siigo)
 
 ```
-[SaleService::create() — después del DB::commit()]
+[SaleService::createFromOrder() — después del DB::commit()]
     └─ Dispatch CreateSiigoInvoiceJob(saleId, delay: 3s)
             │
             [Queue Worker — Supervisor]
@@ -361,6 +362,8 @@ SIIGO_COMPANY_KEY=INVERSIONESGRUPOMARKETSAS
 SIIGO_WEBHOOK_URL=https://api.thebarrilmarket.com/api/webhooks/siigo/products
 SIIGO_INVOICE_DOCUMENT_ID=26900
 SIIGO_PAYMENT_TYPE_ID=12046
+SIIGO_SELLER_ID=133
+ECOMMERCE_USER_ID=<id del usuario ecommerce en BD>
 ```
 
 ### Next.js (`ahre/.env.local`)
@@ -378,10 +381,11 @@ API_TOKEN=<sanctum token del usuario ecommerce>
 
 ## 10. Pendientes / issues conocidos
 
-| # | Descripción | Prioridad |
-|---|-------------|-----------|
-| 1 | Doble descuento de stock: webhook Wompi (`OrderInventoryService`) + `SaleService::create()` pueden decrementar el mismo stock si se ejecutan antes de que el frontend llame `/api/sales` | Alta |
-| 2 | Siigo puede re-enviar webhook `stock.update` al recibir la factura electrónica creada por `CreateSiigoInvoiceJob`, causando otro descuento en BD | Alta |
-| 3 | `SIIGO_PAYMENT_TYPE_ID=12046` (Transferencia) se usa para todas las ventas. Crear medio de pago diferenciado por canal (Efectivo Mostrador / Tienda Online) | Media |
-| 4 | WeightLot items no se incluyen en la factura Siigo (no tienen `sku`) | Media |
-| 5 | Token `API_TOKEN` en Next.js `.env.local` aún es placeholder | Alta |
+| # | Descripción | Prioridad | Estado |
+|---|-------------|-----------|--------|
+| 1 | ~~Doble descuento de stock: webhook Wompi + `SaleService::create()` podían decrementar el mismo stock~~ | Alta | ✅ Resuelto (2026-05-09): `SaleService::createFromOrder` no toca stock; webhook es la única fuente |
+| 2 | Siigo puede re-enviar webhook `stock.update` al recibir la factura electrónica creada por `CreateSiigoInvoiceJob`, causando otro descuento en BD | Alta | Abierto |
+| 3 | `SIIGO_PAYMENT_TYPE_ID=12046` (Transferencia) se usa para todas las ventas. Crear medio de pago diferenciado por canal (Efectivo Mostrador / Tienda Online) | Media | Abierto |
+| 4 | WeightLot items no se incluyen en la factura Siigo (no tienen `sku`) | Media | Abierto |
+| 5 | ~~Token `API_TOKEN` en Next.js `.env.local` era placeholder~~ | Alta | ✅ Resuelto |
+| 6 | ~~`seller` faltaba en el payload de factura Siigo (campo obligatorio)~~ | Alta | ✅ Resuelto (2026-05-09): `SIIGO_SELLER_ID=133` |

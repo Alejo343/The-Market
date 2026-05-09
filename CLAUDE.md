@@ -60,6 +60,10 @@ saleable_type / moveable_type
 Sale has optional customer fields: customer_identification, customer_name, customer_email.
 If not provided → defaults to Consumidor Final (NIT 222222222) in Siigo invoice.
 
+Online sales have order_reference (unique) linking Sale to Order.
+Sale creation for online channel happens in the Wompi webhook (SaleService::createFromOrder),
+NOT in SaleService::create. Frontend POST /api/sales is idempotent — returns existing Sale.
+
 ### Relations
 
 Product → variants, weightLots, media (pivot: order, is_primary)
@@ -113,6 +117,8 @@ SIIGO_COMPANY_KEY
 SIIGO_WEBHOOK_URL=https://api.thebarrilmarket.com/api/webhooks/siigo/products
 SIIGO_INVOICE_DOCUMENT_ID=26900
 SIIGO_PAYMENT_TYPE_ID=12046
+SIIGO_SELLER_ID=133
+ECOMMERCE_USER_ID=<id del usuario ecommerce>
 ```
 
 ### Services

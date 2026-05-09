@@ -18,7 +18,9 @@
       "WebSearch",
       "WebFetch(domain:soporte.wompi.co)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(cd /c/Users/David/Documents/pruebas/prueba1 && ls -la)",
+      "Read(//c/Users/David/Documents/pruebas/prueba1/**)"
     ]
   }
 }
