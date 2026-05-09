@@ -55,12 +55,16 @@ new class extends Component {
         $lastSuccess   = SiigoSyncLog::where('status', 'success')->latest()->value('created_at');
         $synced        = ProductVariant::whereNotNull('siigo_id')->count();
 
-        // Errores del último batch ejecutado manualmente
-        $lastBatchErrors = $this->lastBatchId
+        // Errores y creados del último batch ejecutado manualmente
+        $lastBatchErrors  = $this->lastBatchId
             ? SiigoSyncLog::byBatch($this->lastBatchId)->errors()->get()
             : collect();
 
-        return compact('logs', 'totalToday', 'errorsToday', 'lastSuccess', 'synced', 'lastBatchErrors');
+        $lastBatchCreated = $this->lastBatchId
+            ? SiigoSyncLog::byBatch($this->lastBatchId)->where('topic', 'products.create')->get()
+            : collect();
+
+        return compact('logs', 'totalToday', 'errorsToday', 'lastSuccess', 'synced', 'lastBatchErrors', 'lastBatchCreated');
     }
 }; ?>
 
@@ -143,6 +147,26 @@ new class extends Component {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
             </svg>
             Último sync completado sin errores.
+        </div>
+    @endif
+
+    {{-- Productos creados en el último sync --}}
+    @if($lastBatchCreated->isNotEmpty())
+        <div class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h2 class="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                {{ $lastBatchCreated->count() }} producto(s) nuevos creados en el último sync
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                @foreach($lastBatchCreated as $item)
+                    <div class="flex items-center gap-2 bg-white border border-blue-100 rounded px-3 py-2 text-sm">
+                        <span class="font-mono text-xs font-bold text-blue-600 shrink-0">{{ $item->siigo_code ?? '—' }}</span>
+                        <span class="text-gray-700 truncate" title="{{ $item->message }}">{{ $item->message }}</span>
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 

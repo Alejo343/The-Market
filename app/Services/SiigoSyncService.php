@@ -60,6 +60,18 @@ class SiigoSyncService
                 try {
                     [$action] = $this->syncProduct($item);
                     $counters[$action]++;
+                    if ($action === 'created') {
+                        SiigoSyncLog::record(
+                            'import',
+                            'success',
+                            ($item['name'] ?? 'Sin nombre'),
+                            'products.create',
+                            $item['code'] ?? null,
+                            $item['id'] ?? null,
+                            null,
+                            $batchId,
+                        );
+                    }
                 } catch (Throwable $e) {
                     $counters['errors']++;
                     Log::error('SiigoSync import error', ['code' => $item['code'] ?? '?', 'error' => $e->getMessage()]);
@@ -163,8 +175,7 @@ class SiigoSyncService
             })->first();
 
             if ($variant) {
-                $action = $this->updateVariant($variant, $data);
-                return [$action, null];
+                return $this->updateVariant($variant, $data);
             }
 
             // Sin code no podemos crear (payload incompleto, e.g. stock.update solo con id)
@@ -182,7 +193,7 @@ class SiigoSyncService
         });
     }
 
-    private function updateVariant(ProductVariant $variant, array $data): string
+    private function updateVariant(ProductVariant $variant, array $data): array
     {
         $changed = false;
 
@@ -233,7 +244,7 @@ class SiigoSyncService
             $product->save();
         }
 
-        return ($changed || $productChanged) ? 'updated' : 'skipped';
+        return ($changed || $productChanged) ? ['updated', null] : ['skipped', 'sin cambios'];
     }
 
     private function defaultCategory(): int
