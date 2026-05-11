@@ -12,7 +12,9 @@ class ExportProductImages extends Command
     protected $signature = 'products:export-images
                             {--out= : Carpeta de salida (default: storage/app/exports/product-images)}
                             {--region= : Filtrar por nombre de región}
-                            {--only-active : Solo productos activos}';
+                            {--only-active : Solo productos activos}
+                            {--zip : Comprimir la carpeta en un .zip al finalizar}
+                            {--zip-name= : Nombre del archivo zip (default: fotos-productos-YYYY-MM-DD.zip)}';
 
     protected $description = 'Exporta imágenes de productos organizadas por región. Cada imagen se renombra con SKU + nombre del producto.';
 
@@ -101,7 +103,55 @@ class ExportProductImages extends Command
         $this->newLine();
         $this->line("Carpeta de salida: <fg=cyan>{$outBase}</>");
 
+        if ($this->option('zip')) {
+            $zipPath = $this->compressFolder($outBase);
+            if ($zipPath) {
+                $this->info("ZIP generado: <fg=cyan>{$zipPath}</>");
+            } else {
+                $this->error('No se pudo crear el ZIP. Verifica que la extensión zip esté habilitada en PHP.');
+                return self::FAILURE;
+            }
+        }
+
         return self::SUCCESS;
+    }
+
+    private function compressFolder(string $folder): string|false
+    {
+        if (!class_exists(\ZipArchive::class)) {
+            return false;
+        }
+
+        $zipName = $this->option('zip-name')
+            ?: 'fotos-productos-'.now()->format('Y-m-d').'.zip';
+
+        // Si el nombre no tiene path, guardarlo junto a la carpeta exportada
+        $zipPath = str_contains($zipName, DIRECTORY_SEPARATOR) || str_contains($zipName, '/')
+            ? $zipName
+            : dirname($folder).DIRECTORY_SEPARATOR.$zipName;
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return false;
+        }
+
+        $baseLen = \strlen(rtrim($folder, '/\\').DIRECTORY_SEPARATOR);
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($folder, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        foreach ($files as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+            $localPath = substr($file->getRealPath(), $baseLen);
+            $zip->addFile($file->getRealPath(), $localPath);
+        }
+
+        $zip->close();
+
+        return $zipPath;
     }
 
     private function sanitize(string $value): string
