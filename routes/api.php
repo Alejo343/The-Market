@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\DeliveryZoneController;
+use App\Http\Controllers\Api\FeaturedProductController;
 use App\Http\Controllers\Api\SiigoWebhookController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\InventoryMovementController;
@@ -64,6 +65,9 @@ Route::get('media/{media}', [MediaController::class, 'show']);
 Route::get('regions', [RegionController::class, 'index']);
 Route::get('regions/{region}/variants', [RegionController::class, 'variants']); // ← antes
 Route::get('regions/{region}', [RegionController::class, 'show']);              // ← después
+
+// Productos destacados (público — ecommerce)
+Route::get('featured-products', [FeaturedProductController::class, 'index']);
 
 // Zonas de envío (lectura pública para el checkout)
 Route::get('delivery-zones', [DeliveryZoneController::class, 'index']);
@@ -148,6 +152,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('regions', [RegionController::class, 'store']);
     Route::put('regions/{region}', [RegionController::class, 'update']);
     Route::delete('regions/{region}', [RegionController::class, 'destroy']);
+
+    // Productos destacados (admin)
+    Route::get('regions/{region}/featured', [FeaturedProductController::class, 'show']);
+    Route::post('regions/{region}/featured', [FeaturedProductController::class, 'sync']);
 
     // Zonas de envío (escritura protegida)
     Route::post('delivery-zones', [DeliveryZoneController::class, 'store']);

@@ -51,6 +51,14 @@ class Product extends Model
     }
 
     /**
+     * Regiones donde este producto es destacado
+     */
+    public function featuredRegions(): BelongsToMany
+    {
+        return $this->belongsToMany(Region::class, 'featured_products');
+    }
+
+    /**
      * Variantes del producto (para venta por unidad)
      */
     public function variants(): HasMany

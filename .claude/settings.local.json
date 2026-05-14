@@ -20,7 +20,10 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Bash(cd /c/Users/David/Documents/pruebas/prueba1 && ls -la)",
-      "Read(//c/Users/David/Documents/pruebas/prueba1/**)"
+      "Read(//c/Users/David/Documents/pruebas/prueba1/**)",
+      "Bash(Get-ChildItem -Path 'c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\app\\\\Livewire' -Recurse -Filter '*.php')",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(grep -E '\\\\.\\(php\\)$')"
     ]
   }
 }

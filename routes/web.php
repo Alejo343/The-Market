@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/inventory/movements', 'pages::inventory.movements');
     Route::livewire('/regions', 'pages::region.index')->name('regions.index');
     Route::livewire('/regions/create', 'pages::region.create')->name('regions.create');
+    Route::livewire('/featured-products', 'pages::featured-products.index')->name('featured-products.index');
 
 
     Route::view('/inventory/alerts', 'inventory.alerts')->name('inventory.alerts');

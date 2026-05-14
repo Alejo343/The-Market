@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Region extends Model
@@ -26,6 +27,17 @@ class Region extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Productos destacados de esta región
+     */
+    public function featuredProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'featured_products')
+            ->withPivot('order')
+            ->withTimestamps()
+            ->orderByPivot('order');
     }
 
     /**
