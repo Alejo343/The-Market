@@ -1,15 +1,16 @@
 <?php
 use Livewire\Component;
 use App\Models\DeliveryZone;
+use App\Models\ProductVariant;
 use App\Services\DeliveryZoneService;
 
 new class extends Component {
-    public string $name        = '';
-    public string $color       = '#3B82F6';
-    public int    $price       = 0;   // pesos — se convierte a centavos al guardar
-    public int    $sort_order  = 0;
-    public array  $polygon     = [];
-    public bool   $active      = true;
+    public string $name             = '';
+    public string $color            = '#3B82F6';
+    public int    $sort_order       = 0;
+    public array  $polygon          = [];
+    public bool   $active           = true;
+    public ?int   $productVariantId = null;
 
     public ?int   $editingId   = null;
     public ?int   $deletingId  = null;
@@ -19,7 +20,13 @@ new class extends Component {
 
     public function with(DeliveryZoneService $service): array
     {
-        return ['zones' => $service->allIncludingInactive()];
+        return [
+            'zones'       => $service->allIncludingInactive(),
+            'domVariants' => ProductVariant::where('sku', 'like', 'DOM%')
+                ->with('product')
+                ->orderBy('sku')
+                ->get(),
+        ];
     }
 
     public function save(DeliveryZoneService $service): void
@@ -27,24 +34,23 @@ new class extends Component {
         $this->resetMessages();
 
         $this->validate([
-            'name'    => 'required|string|max:100',
-            'color'   => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'price'   => 'required|integer|min:0',
-            'polygon' => 'required|array',
+            'name'             => 'required|string|max:100',
+            'color'            => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'polygon'          => 'required|array',
+            'productVariantId' => 'nullable|exists:product_variants,id',
         ], [
             'name.required'    => 'El nombre de la zona es obligatorio',
             'polygon.required' => 'Debes dibujar el polígono de la zona en el mapa',
-            'price.min'        => 'El costo de envío no puede ser negativo',
         ]);
 
         try {
             $data = [
-                'name'        => $this->name,
-                'color'       => $this->color,
-                'price_cents' => $this->price * 100,
-                'polygon'     => $this->polygon,
-                'sort_order'  => $this->sort_order,
-                'active'      => $this->active,
+                'name'               => $this->name,
+                'color'              => $this->color,
+                'polygon'            => $this->polygon,
+                'sort_order'         => $this->sort_order,
+                'active'             => $this->active,
+                'product_variant_id' => $this->productVariantId,
             ];
 
             if ($this->editingId) {
@@ -70,12 +76,12 @@ new class extends Component {
         $this->editingId = $id;
         $zone = DeliveryZone::findOrFail($id);
 
-        $this->name       = $zone->name;
-        $this->color      = $zone->color;
-        $this->price      = intdiv($zone->price_cents, 100);
-        $this->sort_order = $zone->sort_order;
-        $this->active     = $zone->active;
-        $this->polygon    = $zone->polygon ?? [];
+        $this->name             = $zone->name;
+        $this->color            = $zone->color;
+        $this->sort_order       = $zone->sort_order;
+        $this->active           = $zone->active;
+        $this->polygon          = $zone->polygon ?? [];
+        $this->productVariantId = $zone->product_variant_id;
 
         $this->dispatch('load-polygon', polygon: $zone->polygon, color: $zone->color);
     }
@@ -113,13 +119,13 @@ new class extends Component {
 
     private function resetForm(): void
     {
-        $this->name       = '';
-        $this->color      = '#3B82F6';
-        $this->price      = 0;
-        $this->sort_order = 0;
-        $this->polygon    = [];
-        $this->active     = true;
-        $this->editingId  = null;
+        $this->name             = '';
+        $this->color            = '#3B82F6';
+        $this->sort_order       = 0;
+        $this->polygon          = [];
+        $this->active           = true;
+        $this->productVariantId = null;
+        $this->editingId        = null;
     }
 
     private function resetMessages(): void
@@ -174,18 +180,26 @@ new class extends Component {
                     @error('name') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="flex gap-3">
-                    <div class="flex-1">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Costo envío (pesos)</label>
-                        <input type="number" wire:model="price" min="0" step="100"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        @error('price') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Color</label>
-                        <input type="color" wire:model="color"
-                            class="w-10 h-9 rounded cursor-pointer border border-gray-300">
-                    </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Producto de domicilio</label>
+                    <select wire:model="productVariantId"
+                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">— Sin domicilio asignado —</option>
+                        @foreach($domVariants as $variant)
+                            <option value="{{ $variant->id }}">
+                                {{ $variant->product->name }}
+                                ({{ $variant->sku }})
+                                · ${{ number_format($variant->price, 0, ',', '.') }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('productVariantId') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Color</label>
+                    <input type="color" wire:model="color"
+                        class="w-10 h-9 rounded cursor-pointer border border-gray-300">
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -232,8 +246,13 @@ new class extends Component {
                             style="background-color: {{ $zone->color }}"></span>
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-900 truncate">{{ $zone->name }}</p>
-                            <p class="text-xs text-gray-500">
-                                ${{ number_format($zone->price_cents / 100, 0, ',', '.') }}
+                            <p class="text-xs text-gray-500 truncate">
+                                @if($zone->variant)
+                                    ${{ number_format($zone->variant->price, 0, ',', '.') }}
+                                    · {{ $zone->variant->sku }}
+                                @else
+                                    Sin domicilio
+                                @endif
                                 · {{ $zone->active ? 'activa' : 'inactiva' }}
                             </p>
                         </div>

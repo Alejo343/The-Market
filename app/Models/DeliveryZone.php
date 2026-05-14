@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DeliveryZone extends Model
 {
@@ -13,6 +14,7 @@ class DeliveryZone extends Model
         'polygon',
         'sort_order',
         'active',
+        'product_variant_id',
     ];
 
     protected $casts = [
@@ -21,6 +23,11 @@ class DeliveryZone extends Model
         'price_cents' => 'integer',
         'sort_order' => 'integer',
     ];
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
 
     public function scopeActive($query)
     {

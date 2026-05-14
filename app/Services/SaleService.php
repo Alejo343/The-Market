@@ -4,13 +4,15 @@ namespace App\Services;
 
 use App\Jobs\CreateSiigoInvoiceJob;
 use App\Jobs\SendWhatsAppJob;
+use App\Mail\OrderConfirmationMail;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Sale;
 use App\Models\WeightLot;
+use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Exception;
+use Illuminate\Support\Facades\Mail;
 
 class SaleService
 {
@@ -121,14 +123,14 @@ class SaleService
         try {
             DB::beginTransaction();
 
-            $subtotal  = 0;
-            $taxTotal  = 0;
+            $subtotal = 0;
+            $taxTotal = 0;
             $saleItems = [];
 
             foreach ($order->items_data as $item) {
                 $variantId = $item['variantId'] ?? null;
-                $quantity  = (int) ($item['quantity'] ?? 0);
-                $price     = (float) ($item['price'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 0);
+                $price = (float) ($item['price'] ?? 0);
 
                 if (! $variantId || $quantity <= 0) {
                     continue;
@@ -140,14 +142,14 @@ class SaleService
                 }
 
                 $itemSubtotal = $price * $quantity;
-                $itemTax      = $variant->tax ? $variant->tax->calculateTaxAmount($itemSubtotal) : 0;
+                $itemTax = $variant->tax ? $variant->tax->calculateTaxAmount($itemSubtotal) : 0;
 
                 $saleItems[] = [
                     'item_type' => ProductVariant::class,
-                    'item_id'   => $variantId,
-                    'quantity'  => $quantity,
-                    'price'     => $price,
-                    'subtotal'  => $itemSubtotal,
+                    'item_id' => $variantId,
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'subtotal' => $itemSubtotal,
                 ];
 
                 $subtotal += $itemSubtotal;
@@ -155,24 +157,28 @@ class SaleService
             }
 
             $sale = Sale::create([
-                'order_reference'         => $order->reference,
-                'channel'                 => 'online',
-                'user_id'                 => config('services.ecommerce.user_id'),
-                'subtotal'                => $subtotal,
-                'tax_total'               => $taxTotal,
-                'total'                   => $subtotal + $taxTotal,
+                'order_reference' => $order->reference,
+                'channel' => 'online',
+                'user_id' => config('services.ecommerce.user_id'),
+                'subtotal' => $subtotal,
+                'tax_total' => $taxTotal,
+                'total' => $subtotal + $taxTotal,
                 'customer_identification' => $order->customer_identification,
-                'customer_name'           => $order->customer_name,
-                'customer_email'          => $order->customer_email,
+                'customer_name' => $order->customer_name,
+                'customer_email' => $order->customer_email,
             ]);
 
             $sale->items()->createMany($saleItems);
 
             DB::commit();
 
-            $sale->load(['user', 'items.item']);
+            $sale->load(['user', 'items.item.product']);
 
             CreateSiigoInvoiceJob::dispatch($sale->id)->delay(now()->addSeconds(3));
+
+            if ($order->customer_email) {
+                Mail::to($order->customer_email)->queue(new OrderConfirmationMail($sale, $order));
+            }
 
             SendWhatsAppJob::dispatch('notifyBusinessSaleCreated', [
                 $sale->id,
@@ -223,14 +229,14 @@ class SaleService
 
             // Crear la venta
             $sale = Sale::create([
-                'channel'                 => $data['channel'],
-                'user_id'                 => $userId,
-                'subtotal'                => $subtotal,
-                'tax_total'               => $taxTotal,
-                'total'                   => $subtotal + $taxTotal,
+                'channel' => $data['channel'],
+                'user_id' => $userId,
+                'subtotal' => $subtotal,
+                'tax_total' => $taxTotal,
+                'total' => $subtotal + $taxTotal,
                 'customer_identification' => $customer['identification'] ?? null,
-                'customer_name'           => $customer['name'] ?? null,
-                'customer_email'          => $customer['email'] ?? null,
+                'customer_name' => $customer['name'] ?? null,
+                'customer_email' => $customer['email'] ?? null,
             ]);
 
             // Crear los items de venta
@@ -298,12 +304,12 @@ class SaleService
 
         // Verificar peso disponible
         if ($lot->available_weight < $quantity) {
-            throw new Exception("INSUFFICIENT_WEIGHT");
+            throw new Exception('INSUFFICIENT_WEIGHT');
         }
 
         // Verificar que esté activo
-        if (!$lot->active) {
-            throw new Exception("INACTIVE_LOT");
+        if (! $lot->active) {
+            throw new Exception('INACTIVE_LOT');
         }
 
         $price = $lot->price_per_kg;

@@ -9,12 +9,12 @@ class DeliveryZoneService
 {
     public function all(): Collection
     {
-        return DeliveryZone::active()->ordered()->get();
+        return DeliveryZone::active()->ordered()->with('variant.product')->get();
     }
 
     public function allIncludingInactive(): Collection
     {
-        return DeliveryZone::ordered()->get();
+        return DeliveryZone::ordered()->with('variant.product')->get();
     }
 
     public function store(array $data): DeliveryZone
@@ -25,6 +25,7 @@ class DeliveryZoneService
     public function update(DeliveryZone $zone, array $data): DeliveryZone
     {
         $zone->update($data);
+
         return $zone->fresh();
     }
 
@@ -56,7 +57,7 @@ class DeliveryZoneService
      */
     public function geocodeAddress(string $address): ?array
     {
-        $url = 'https://nominatim.openstreetmap.org/search?' . http_build_query([
+        $url = 'https://nominatim.openstreetmap.org/search?'.http_build_query([
             'q' => $address,
             'format' => 'json',
             'limit' => 1,
@@ -71,7 +72,7 @@ class DeliveryZoneService
 
         $response = @file_get_contents($url, false, $context);
 
-        if (!$response) {
+        if (! $response) {
             return null;
         }
 
@@ -107,11 +108,12 @@ class DeliveryZoneService
                         return true;
                     }
                 }
+
                 return false;
             }
         }
 
-        if (!$coordinates || !isset($coordinates[0])) {
+        if (! $coordinates || ! isset($coordinates[0])) {
             return false;
         }
 
@@ -137,7 +139,7 @@ class DeliveryZoneService
                 && ($lng < ($xj - $xi) * ($lat - $yi) / ($yj - $yi) + $xi);
 
             if ($intersect) {
-                $inside = !$inside;
+                $inside = ! $inside;
             }
         }
 

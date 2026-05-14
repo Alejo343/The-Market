@@ -23,7 +23,8 @@
       "Read(//c/Users/David/Documents/pruebas/prueba1/**)",
       "Bash(Get-ChildItem -Path 'c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\app\\\\Livewire' -Recurse -Filter '*.php')",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(grep -E '\\\\.\\(php\\)$')"
+      "Bash(grep -E '\\\\.\\(php\\)$')",
+      "PowerShell(php artisan make:migration add_product_variant_id_to_delivery_zones_table --no-interaction)"
     ]
   }
 }

@@ -98,4 +98,11 @@
       0 => 'Pest\\Laravel\\PestServiceProvider',
     ),
   ),
+  'resend/resend-laravel' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Resend\\Laravel\\ResendServiceProvider',
+    ),
+  ),
 );

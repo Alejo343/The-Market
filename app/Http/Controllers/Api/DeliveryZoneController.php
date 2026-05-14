@@ -21,15 +21,16 @@ class DeliveryZoneController extends Controller
     public function store(StoreDeliveryZoneRequest $request): JsonResponse
     {
         $zone = $this->service->store([
-            'name'       => $request->name,
-            'color'      => $request->color ?? '#3B82F6',
-            'price_cents'=> $request->price_cents,
-            'polygon'    => $request->polygon,
+            'name' => $request->name,
+            'color' => $request->color ?? '#3B82F6',
+            'price_cents' => $request->price_cents ?? 0,
+            'polygon' => $request->polygon,
             'sort_order' => $request->sort_order ?? 0,
-            'active'     => $request->boolean('active', true),
+            'active' => $request->boolean('active', true),
+            'product_variant_id' => $request->product_variant_id,
         ]);
 
-        return response()->json($zone, 201);
+        return response()->json($zone->load('variant.product'), 201);
     }
 
     public function show(DeliveryZone $deliveryZone): JsonResponse
@@ -40,17 +41,22 @@ class DeliveryZoneController extends Controller
     public function update(Request $request, DeliveryZone $deliveryZone): JsonResponse
     {
         $validated = $request->validate([
-            'name'       => 'sometimes|string|max:100',
-            'color'      => 'sometimes|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'price_cents'=> 'sometimes|integer|min:0',
-            'polygon'    => 'sometimes|array',
+            'name' => 'sometimes|string|max:100',
+            'color' => 'sometimes|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'price_cents' => 'sometimes|integer|min:0',
+            'polygon' => 'sometimes|array',
             'sort_order' => 'sometimes|integer|min:0',
-            'active'     => 'sometimes|boolean',
+            'active' => 'sometimes|boolean',
+            'product_variant_id' => [
+                'sometimes', 'nullable',
+                \Illuminate\Validation\Rule::exists('product_variants', 'id')
+                    ->where(fn ($q) => $q->where('sku', 'like', 'DOM%')),
+            ],
         ]);
 
         $zone = $this->service->update($deliveryZone, $validated);
 
-        return response()->json($zone);
+        return response()->json($zone->load('variant.product'));
     }
 
     public function destroy(DeliveryZone $deliveryZone): JsonResponse
@@ -68,20 +74,20 @@ class DeliveryZoneController extends Controller
     {
         $request->validate([
             'address' => 'required_without_all:lat,lng|string',
-            'lat'     => 'required_without:address|numeric|between:-90,90',
-            'lng'     => 'required_without:address|numeric|between:-180,180',
+            'lat' => 'required_without:address|numeric|between:-90,90',
+            'lng' => 'required_without:address|numeric|between:-180,180',
         ]);
 
         $lat = $request->lat;
         $lng = $request->lng;
 
-        if ($request->filled('address') && !($lat && $lng)) {
+        if ($request->filled('address') && ! ($lat && $lng)) {
             $coords = $this->service->geocodeAddress($request->address);
 
-            if (!$coords) {
+            if (! $coords) {
                 return response()->json([
-                    'zone'   => null,
-                    'message'=> 'No se pudo geocodificar la dirección',
+                    'zone' => null,
+                    'message' => 'No se pudo geocodificar la dirección',
                 ]);
             }
 
@@ -91,19 +97,25 @@ class DeliveryZoneController extends Controller
 
         $zone = $this->service->detectZone((float) $lat, (float) $lng);
 
-        if (!$zone) {
+        if (! $zone) {
             return response()->json([
-                'zone'        => null,
+                'zone' => null,
                 'price_cents' => 0,
-                'message'     => 'La dirección está fuera de las zonas de cobertura',
+                'product_variant_id' => null,
+                'message' => 'La dirección está fuera de las zonas de cobertura',
             ]);
         }
 
+        $priceCents = $zone->variant
+            ? (int) round((float) $zone->variant->price * 100)
+            : $zone->price_cents;
+
         return response()->json([
-            'zone'        => $zone,
-            'price_cents' => $zone->price_cents,
-            'lat'         => $lat,
-            'lng'         => $lng,
+            'zone' => $zone,
+            'price_cents' => $priceCents,
+            'product_variant_id' => $zone->product_variant_id,
+            'lat' => $lat,
+            'lng' => $lng,
         ]);
     }
 }
