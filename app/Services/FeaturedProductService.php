@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class FeaturedProductService
 {
-    const MIN = 4;
+    const MIN = 1;
     const MAX = 8;
 
     /**
