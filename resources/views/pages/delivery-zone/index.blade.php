@@ -288,8 +288,8 @@ new class extends Component {
         @clear-drawing.window="clearDrawing()">
 
         <div id="delivery-map" class="w-full h-full"
-            data-lat="{{ env('STORE_LAT', '4.7109886') }}"
-            data-lng="{{ env('STORE_LNG', '-74.072092') }}"></div>
+            data-lat="3.4516"
+            data-lng="-76.5319"></div>
 
         {{-- Instrucciones flotantes --}}
         <div class="absolute top-4 right-4 z-[1000] bg-white rounded-lg shadow-lg p-3 text-xs text-gray-600 max-w-52 pointer-events-none">
