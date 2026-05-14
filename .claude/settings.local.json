@@ -25,7 +25,14 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(grep -E '\\\\.\\(php\\)$')",
       "PowerShell(php artisan make:migration add_product_variant_id_to_delivery_zones_table --no-interaction)",
-      "PowerShell(Rename-Item \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\app\\\\Http\\\\Requests\\\\ReduceWeightLotRequest.php\" \"ReduceWeightRequest.php\")"
+      "PowerShell(Rename-Item \"c:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\app\\\\Http\\\\Requests\\\\ReduceWeightLotRequest.php\" \"ReduceWeightRequest.php\")",
+      "PowerShell(php artisan make:migration add_parent_id_to_regions_table --no-interaction)",
+      "PowerShell(php artisan migrate --no-interaction)",
+      "PowerShell(./vendor/bin/pint --dirty)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\resources\\\\views\\\\pages\" -Recurse)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "PowerShell(php artisan view:clear --no-interaction)"
     ]
   }
 }

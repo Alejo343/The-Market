@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -15,11 +16,28 @@ class Region extends Model
         'name',
         'description',
         'active',
+        'parent_id',
     ];
 
     protected $casts = [
         'active' => 'boolean',
     ];
+
+    /**
+     * Región padre
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Region::class, 'parent_id');
+    }
+
+    /**
+     * Regiones hijas
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Region::class, 'parent_id');
+    }
 
     /**
      * Productos de esta región

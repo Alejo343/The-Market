@@ -17,6 +17,7 @@ class StoreRegionRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', 'unique:regions,name'],
             'description' => ['nullable', 'string', 'max:500'],
             'active' => ['boolean'],
+            'parent_id' => ['nullable', 'exists:regions,id'],
         ];
     }
 

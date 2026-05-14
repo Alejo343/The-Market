@@ -13,6 +13,11 @@ new class extends Component {
     public string $name = '';
     public string $description = '';
     public bool $active = true;
+    public ?int $parentId = null;
+
+    // Asignación rápida de jerarquía
+    public ?int $assignChildId = null;
+    public ?int $assignParentId = null;
 
     public string $errorMessage = '';
     public string $successMessage = '';
@@ -31,15 +36,24 @@ new class extends Component {
             $regions = $regionService->list(activeOnly: $this->showActiveOnly, search: $this->search);
 
             $regions->loadCount(['products']);
+            $regions->load('parent');
+
+            $allRegions = Region::orderBy('name')->get();
+
+            $parentRegions = $allRegions->whereNull('parent_id')->values();
 
             return [
                 'regions' => $regions,
+                'allRegions' => $allRegions,
+                'parentRegions' => $parentRegions,
             ];
         } catch (\Exception $e) {
             \Log::error('Error in with(): ' . $e->getMessage());
             $this->errorMessage = $this->translateError($e->getMessage());
             return [
                 'regions' => collect(),
+                'allRegions' => collect(),
+                'parentRegions' => collect(),
             ];
         }
     }
@@ -70,6 +84,7 @@ new class extends Component {
             $this->name = $region->name;
             $this->description = $region->description ?? '';
             $this->active = $region->active;
+            $this->parentId = $region->parent_id;
         } catch (\Exception $e) {
             $this->errorMessage = 'Error al cargar la región';
             $this->cancelEdit();
@@ -85,6 +100,7 @@ new class extends Component {
         $this->name = '';
         $this->description = '';
         $this->active = true;
+        $this->parentId = null;
     }
 
     /**
@@ -114,6 +130,7 @@ new class extends Component {
                 'name' => $this->name,
                 'description' => $this->description ?: null,
                 'active' => $this->active,
+                'parent_id' => $this->parentId,
             ]);
 
             $this->successMessage = 'Región actualizada exitosamente';
@@ -156,6 +173,35 @@ new class extends Component {
         } catch (\Exception $e) {
             $this->errorMessage = $this->translateError($e->getMessage());
             $this->deletingId = null;
+        }
+    }
+
+    /**
+     * Asignación rápida de región padre desde la sección de jerarquía
+     */
+    public function assignParent(RegionService $regionService)
+    {
+        $this->resetMessages();
+
+        if (! $this->assignChildId) {
+            $this->errorMessage = 'Selecciona una región para asignar';
+            return;
+        }
+
+        if ($this->assignChildId === $this->assignParentId) {
+            $this->errorMessage = 'Una región no puede ser su propio padre';
+            return;
+        }
+
+        try {
+            $region = Region::findOrFail($this->assignChildId);
+            $regionService->update($region, ['parent_id' => $this->assignParentId]);
+
+            $this->successMessage = 'Jerarquía actualizada exitosamente';
+            $this->assignChildId = null;
+            $this->assignParentId = null;
+        } catch (\Exception $e) {
+            $this->errorMessage = $this->translateError($e->getMessage());
         }
     }
 
@@ -258,6 +304,9 @@ new class extends Component {
                         Nombre
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Región Padre
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Descripción
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -285,6 +334,23 @@ new class extends Component {
                                 <div class="text-sm font-medium text-gray-900">
                                     {{ $region->name }}
                                 </div>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4">
+                            @if ($editingId === $region->id)
+                                <select wire:model="parentId"
+                                    class="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                    <option value="">Sin padre</option>
+                                    @foreach ($allRegions as $r)
+                                        @if ($r->id !== $region->id)
+                                            <option value="{{ $r->id }}">{{ $r->name }}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            @else
+                                <span class="text-sm text-gray-600">
+                                    {{ $region->parent?->name ?? '-' }}
+                                </span>
                             @endif
                         </td>
                         <td class="px-6 py-4">
@@ -358,7 +424,7 @@ new class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
                             @if ($search)
                                 No se encontraron regiones que coincidan con "{{ $search }}"
                             @else
@@ -369,6 +435,92 @@ new class extends Component {
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    <!-- Sección: Jerarquía de Regiones -->
+    <div class="mt-8">
+        <div class="mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Jerarquía de Regiones</h2>
+            <p class="text-sm text-gray-500 mt-1">Asigna regiones a una región padre para organizarlas en grupos.</p>
+        </div>
+
+        <!-- Asignación rápida -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h3 class="text-sm font-medium text-gray-700 mb-4">Asignar región a un padre</h3>
+            <div class="flex flex-col sm:flex-row gap-4 items-end">
+                <div class="flex-1">
+                    <label class="block text-xs text-gray-500 mb-1">Región a asignar</label>
+                    <select wire:model="assignChildId"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                        <option value="">Selecciona una región...</option>
+                        @foreach ($allRegions as $r)
+                            <option value="{{ $r->id }}">{{ $r->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex items-center text-gray-400 pb-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs text-gray-500 mb-1">Región padre</label>
+                    <select wire:model="assignParentId"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                        <option value="">Sin padre (raíz)</option>
+                        @foreach ($allRegions as $r)
+                            <option value="{{ $r->id }}">{{ $r->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button wire:click="assignParent"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2 shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Guardar
+                </button>
+            </div>
+        </div>
+
+        <!-- Vista de árbol -->
+        @if ($parentRegions->isNotEmpty())
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach ($parentRegions as $parent)
+                    @php $children = $allRegions->where('parent_id', $parent->id)->values(); @endphp
+                    <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                        <div class="flex items-center gap-2 mb-3">
+                            <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                            </svg>
+                            <span class="font-semibold text-gray-900 text-sm">{{ $parent->name }}</span>
+                            <span class="ml-auto text-xs text-gray-400">{{ $children->count() }} sub</span>
+                        </div>
+                        @if ($children->isEmpty())
+                            <p class="text-xs text-gray-400 italic">Sin regiones hijas asignadas</p>
+                        @else
+                            <ul class="space-y-1">
+                                @foreach ($children as $child)
+                                    <li class="flex items-center gap-2 text-sm text-gray-700 pl-2">
+                                        <svg class="w-3 h-3 text-gray-400 shrink-0" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        {{ $child->name }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+                No hay regiones padre definidas aún. Crea regiones y asígnalas a un padre usando el formulario de arriba.
+            </div>
+        @endif
     </div>
 
     <!-- Delete Confirmation Modal -->

@@ -22,10 +22,11 @@ class UpdateRegionRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('regions', 'name')->ignore($regionId)
+                Rule::unique('regions', 'name')->ignore($regionId),
             ],
             'description' => ['nullable', 'string', 'max:500'],
             'active' => ['boolean'],
+            'parent_id' => ['nullable', 'exists:regions,id'],
         ];
     }
 
