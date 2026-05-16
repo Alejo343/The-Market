@@ -20,7 +20,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'https://thebarrilmarket.com',
+        'https://themarketgourmet.com.co',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
     ],
