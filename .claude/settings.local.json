@@ -32,7 +32,10 @@
       "Bash(Get-ChildItem \"C:\\\\Users\\\\David\\\\Herd\\\\themarket\\\\resources\\\\views\\\\pages\" -Recurse)",
       "Bash(Select-Object Name, FullName)",
       "Bash(Format-Table -AutoSize)",
-      "PowerShell(php artisan view:clear --no-interaction)"
+      "PowerShell(php artisan view:clear --no-interaction)",
+      "Bash(./vendor/bin/pint --dirty)",
+      "PowerShell(.\\\\vendor\\\\bin\\\\pint --dirty 2>&1)",
+      "Bash(ssh mivps *)"
     ]
   }
 }

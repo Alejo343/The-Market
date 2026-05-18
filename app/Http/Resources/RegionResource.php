@@ -36,6 +36,9 @@ class RegionResource extends JsonResource
             // Productos (solo si la relación está cargada)
             'products' => ProductResource::collection($this->whenLoaded('products')),
 
+            // Productos de esta región + todas sus hijas
+            'all_products' => ProductResource::collection($this->whenLoaded('allProducts')),
+
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

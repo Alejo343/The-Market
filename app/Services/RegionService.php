@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Product;
 use App\Models\Region;
-use Illuminate\Database\Eloquent\Collection;
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 
 class RegionService
 {
@@ -70,8 +71,17 @@ class RegionService
      */
     public function show(Region $region, ?array $include = null): Region
     {
-        if ($include) {
-            $region->load($include);
+        $wantsAllProducts = in_array('all_products', $include ?? []);
+        $normalIncludes = array_filter($include ?? [], fn ($i) => $i !== 'all_products');
+
+        if ($normalIncludes) {
+            $region->load(array_values($normalIncludes));
+        }
+
+        if ($wantsAllProducts) {
+            $childIds = $region->children()->pluck('id');
+            $allProducts = Product::whereIn('region_id', $childIds->prepend($region->id))->get();
+            $region->setRelation('allProducts', $allProducts);
         }
 
         return $region;
