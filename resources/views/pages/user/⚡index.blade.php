@@ -87,7 +87,7 @@ new class extends Component {
             'newName'     => 'required|string|max:255',
             'newEmail'    => 'required|email|max:255|unique:users,email',
             'newPassword' => 'required|string|min:8',
-            'newRole'     => 'required|in:admin,cashier',
+            'newRole'     => 'required|in:admin,cashier,viewer',
         ], [
             'newName.required'     => 'El nombre es obligatorio',
             'newEmail.required'    => 'El email es obligatorio',
@@ -137,7 +137,7 @@ new class extends Component {
         $this->validate([
             'editName'  => 'required|string|max:255',
             'editEmail' => "required|email|max:255|unique:users,email,{$this->editingId}",
-            'editRole'  => 'required|in:admin,cashier',
+            'editRole'  => 'required|in:admin,cashier,viewer',
             'editPassword' => 'nullable|string|min:8',
         ], [
             'editName.required'  => 'El nombre es obligatorio',
@@ -294,6 +294,7 @@ new class extends Component {
                 <option value="">Todos los roles</option>
                 <option value="admin">Administrador</option>
                 <option value="cashier">Cajero</option>
+                <option value="viewer">Visor</option>
             </select>
 
             {{-- Filtro estado --}}
@@ -371,12 +372,17 @@ new class extends Component {
                                     class="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                     <option value="admin">Administrador</option>
                                     <option value="cashier">Cajero</option>
+                                    <option value="viewer">Visor</option>
                                 </select>
                                 @error('editRole') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                             @else
                                 @if ($user->role === 'admin')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                         Administrador
+                                    </span>
+                                @elseif ($user->role === 'viewer')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                        Visor
                                     </span>
                                 @else
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -524,6 +530,7 @@ new class extends Component {
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="cashier">Cajero</option>
                             <option value="admin">Administrador</option>
+                            <option value="viewer">Visor</option>
                         </select>
                         @error('newRole') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                     </div>

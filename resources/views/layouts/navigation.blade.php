@@ -19,6 +19,8 @@
     </div>
 
     <nav class="flex-1 overflow-y-auto py-4 px-3">
+        @php $isViewer = auth()->user()?->isViewer(); @endphp
+
         {{-- Dashboard --}}
         <a href="{{ route('dashboard') }}"
             class="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
@@ -57,6 +59,7 @@
         <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pedidos</h3>
 
+            @if(!$isViewer)
             <a href="/delivery-zones"
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('delivery-zones.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,6 +70,7 @@
                 </svg>
                 Zonas de Envío
             </a>
+            @endif
 
             <a href="/orders" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('orders.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
@@ -76,6 +80,7 @@
                 Órdenes
             </a>
 
+            @if(!$isViewer)
             <a href="/payments/report" wire:navigate
                 class="flex items-center px-4 py-3 mb-1 rounded-lg transition-colors {{ request()->routeIs('payments.report') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
                 <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,9 +96,11 @@
                 </svg>
                 Dashboard Inventario
             </a>
+            @endif
         </div>
 
         {{-- INVENTARIO --}}
+        @if(!$isViewer)
         <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Inventario</h3>
 
@@ -146,7 +153,10 @@
             </a>
         </div>
 
+        @endif
+
         {{-- CATÁLOGO --}}
+        @if(!$isViewer)
         <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Catálogo</h3>
 
@@ -199,8 +209,10 @@
                 Impuestos
             </a>
         </div>
+        @endif
 
         {{-- REPORTES --}}
+        @if(!$isViewer)
         <div class="mt-5">
             <h3 class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Reportes</h3>
 
@@ -267,6 +279,7 @@
                 @endif
             </a>
         </div>
+        @endif
 
         {{-- CONFIGURACIÓN --}}
         <div class="mt-5 mb-6">

@@ -35,7 +35,8 @@
       "PowerShell(php artisan view:clear --no-interaction)",
       "Bash(./vendor/bin/pint --dirty)",
       "PowerShell(.\\\\vendor\\\\bin\\\\pint --dirty 2>&1)",
-      "Bash(ssh mivps *)"
+      "Bash(ssh mivps *)",
+      "Bash(xargs grep -l -i \"user\\\\|role\")"
     ]
   }
 }

@@ -109,4 +109,20 @@ class User extends Authenticatable
     {
         return $this->role === 'cashier';
     }
+
+    /**
+     * Verifica si el usuario es visor (solo lectura de ventas y órdenes)
+     */
+    public function isViewer(): bool
+    {
+        return $this->role === 'viewer';
+    }
+
+    /**
+     * Scope para visores
+     */
+    public function scopeViewers($query)
+    {
+        return $query->where('role', 'viewer');
+    }
 }
