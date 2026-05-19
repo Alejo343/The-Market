@@ -75,6 +75,16 @@
         </div>
     </div>
 
+    @livewire('sale-notifier')
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        });
+    </script>
+
     @stack('scripts')
     @livewireScripts
 </body>
