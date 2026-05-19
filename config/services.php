@@ -44,26 +44,31 @@ return [
     ],
 
     'evolution' => [
-        'url'      => env('EVOLUTION_API_URL'),
-        'key'      => env('EVOLUTION_API_KEY'),
+        'url' => env('EVOLUTION_API_URL'),
+        'key' => env('EVOLUTION_API_KEY'),
         'instance' => env('EVOLUTION_INSTANCE'),
         'business_number' => env('WHATSAPP_BUSINESS_NUMBER'),
+        'extra_number' => env('WHATSAPP_EXTRA_NUMBER'),
     ],
 
     'ecommerce' => [
         'user_id' => env('ECOMMERCE_USER_ID'),
     ],
 
+    'store' => [
+        'notification_email' => env('STORE_NOTIFICATION_EMAIL'),
+    ],
+
     'siigo' => [
-        'username'            => env('SIIGO_USERNAME'),
-        'access_key'          => env('SIIGO_ACCESS_KEY'),
-        'partner_id'          => env('SIIGO_PARTNER_ID', 'the-market'),
-        'api_url'             => env('SIIGO_API_URL', 'https://api.siigo.com'),
-        'company_key'         => env('SIIGO_COMPANY_KEY'),
-        'webhook_url'         => env('SIIGO_WEBHOOK_URL'),
+        'username' => env('SIIGO_USERNAME'),
+        'access_key' => env('SIIGO_ACCESS_KEY'),
+        'partner_id' => env('SIIGO_PARTNER_ID', 'the-market'),
+        'api_url' => env('SIIGO_API_URL', 'https://api.siigo.com'),
+        'company_key' => env('SIIGO_COMPANY_KEY'),
+        'webhook_url' => env('SIIGO_WEBHOOK_URL'),
         'invoice_document_id' => env('SIIGO_INVOICE_DOCUMENT_ID'),
-        'payment_type_id'     => env('SIIGO_PAYMENT_TYPE_ID'),
-        'seller_id'           => env('SIIGO_SELLER_ID'),
+        'payment_type_id' => env('SIIGO_PAYMENT_TYPE_ID'),
+        'seller_id' => env('SIIGO_SELLER_ID'),
     ],
 
 ];

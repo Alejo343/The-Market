@@ -8,16 +8,22 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppService
 {
     private string $url;
+
     private string $key;
+
     private string $instance;
+
     private ?string $businessNumber;
+
+    private ?string $extraNumber;
 
     public function __construct()
     {
-        $this->url      = rtrim(config('services.evolution.url', ''), '/');
-        $this->key      = config('services.evolution.key', '');
+        $this->url = rtrim(config('services.evolution.url', ''), '/');
+        $this->key = config('services.evolution.key', '');
         $this->instance = config('services.evolution.instance', '');
         $this->businessNumber = config('services.evolution.business_number');
+        $this->extraNumber = config('services.evolution.extra_number');
     }
 
     public function send(string $number, string $message): bool
@@ -26,25 +32,27 @@ class WhatsAppService
 
         try {
             $response = Http::withHeaders([
-                'apikey'       => $this->key,
+                'apikey' => $this->key,
                 'Content-Type' => 'application/json',
             ])->post("{$this->url}/message/sendText/{$this->instance}", [
                 'number' => $number,
-                'text'   => $message,
+                'text' => $message,
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('WhatsApp send failed', [
                     'number' => $number,
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
             return true;
         } catch (\Throwable $e) {
             Log::error('WhatsApp exception', ['message' => $e->getMessage(), 'number' => $number]);
+
             return false;
         }
     }
@@ -54,22 +62,30 @@ class WhatsAppService
         string $customerName,
         string $customerPhone,
         string $paymentMethod,
-        int $totalCents
+        int $totalCents,
+        array $items = []
     ): bool {
-        if (!$this->businessNumber) {
-            return false;
-        }
-
+        $shortRef = substr($reference, -3);
         $total = number_format($totalCents / 100, 0, ',', '.');
 
         $message = "🛒 *Nueva venta online*\n"
-            . "Pedido: #{$reference}\n"
-            . "Cliente: {$customerName}\n"
-            . "Teléfono: {$customerPhone}\n"
-            . "Total: \${$total}\n"
-            . "Método: {$paymentMethod}";
+            ."Pedido: *#{$shortRef}*\n"
+            ."Cliente: {$customerName}\n"
+            ."Teléfono: {$customerPhone}\n"
+            ."Método: {$paymentMethod}\n";
 
-        return $this->send($this->businessNumber, $message);
+        if (! empty($items)) {
+            $message .= "\n*Productos:*\n";
+            foreach ($items as $item) {
+                $qty = $item['quantity'] ?? 1;
+                $name = $item['name'] ?? 'Producto';
+                $message .= "  • {$qty}x {$name}\n";
+            }
+        }
+
+        $message .= "\nTotal: *\${$total}*";
+
+        return $this->sendToBusinessNumbers($message);
     }
 
     public function notifyCustomerOrderApproved(
@@ -78,12 +94,13 @@ class WhatsAppService
         string $reference,
         int $totalCents
     ): bool {
+        $shortRef = substr($reference, -3);
         $total = number_format($totalCents / 100, 0, ',', '.');
 
         $message = "¡Hola {$customerName}! 👋\n"
-            . "Tu pedido *#{$reference}* ha sido confirmado y está en proceso.\n"
-            . "Total pagado: *\${$total}*\n"
-            . "Te notificaremos cuando esté listo. ¡Gracias por tu compra! 🎉";
+            ."Tu pedido *#{$shortRef}* ha sido confirmado y está en proceso.\n"
+            ."Total pagado: *\${$total}*\n"
+            .'Te notificaremos cuando esté listo. ¡Gracias por tu compra! 🎉';
 
         return $this->send($customerPhone, $message);
     }
@@ -94,19 +111,30 @@ class WhatsAppService
         float $total,
         int $itemsCount
     ): bool {
-        if (!$this->businessNumber) {
-            return false;
-        }
-
         $totalFormatted = number_format($total, 0, ',', '.');
 
         $message = "💰 *Venta en tienda*\n"
-            . "Venta #: {$saleId}\n"
-            . "Cajero: {$cashierName}\n"
-            . "Artículos: {$itemsCount}\n"
-            . "Total: \${$totalFormatted}";
+            ."Venta #: {$saleId}\n"
+            ."Cajero: {$cashierName}\n"
+            ."Artículos: {$itemsCount}\n"
+            ."Total: \${$totalFormatted}";
 
-        return $this->send($this->businessNumber, $message);
+        return $this->sendToBusinessNumbers($message);
+    }
+
+    private function sendToBusinessNumbers(string $message): bool
+    {
+        if (! $this->businessNumber) {
+            return false;
+        }
+
+        $result = $this->send($this->businessNumber, $message);
+
+        if ($this->extraNumber) {
+            $this->send($this->extraNumber, $message);
+        }
+
+        return $result;
     }
 
     private function sanitizeNumber(string $number): string

@@ -31,22 +31,22 @@ class OrderService
         ?string $customerBusinessName = null,
     ): Order {
         return Order::create([
-            'reference'                    => $reference,
-            'payment_method'               => $paymentMethod,
-            'status'                       => 'PENDING',
-            'customer_email'               => $customerEmail,
-            'customer_name'                => $customerName,
-            'customer_phone'               => $customerPhone,
-            'customer_address'             => $customerAddress,
-            'customer_city'                => $customerCity,
+            'reference' => $reference,
+            'payment_method' => $paymentMethod,
+            'status' => 'PENDING',
+            'customer_email' => $customerEmail,
+            'customer_name' => $customerName,
+            'customer_phone' => $customerPhone,
+            'customer_address' => $customerAddress,
+            'customer_city' => $customerCity,
             'customer_identification_type' => $customerIdentificationType,
-            'customer_identification'      => $customerIdentification,
-            'customer_business_name'       => $customerBusinessName,
-            'items_data'                   => $items,
-            'total_amount_cents'           => $totalAmountCents,
-            'delivery_zone_id'             => $deliveryZoneId,
-            'delivery_cost_cents'          => $deliveryCostCents,
-            'notes'                        => $notes,
+            'customer_identification' => $customerIdentification,
+            'customer_business_name' => $customerBusinessName,
+            'items_data' => $items,
+            'total_amount_cents' => $totalAmountCents,
+            'delivery_zone_id' => $deliveryZoneId,
+            'delivery_cost_cents' => $deliveryCostCents,
+            'notes' => $notes,
         ]);
     }
 
@@ -54,6 +54,7 @@ class OrderService
     {
         $order = Order::where('reference', $reference)->firstOrFail();
         $order->update(['transaction_id' => $transactionId]);
+
         return $order;
     }
 
@@ -62,7 +63,7 @@ class OrderService
         $order = Order::where('transaction_id', $transactionId)->firstOrFail();
         $oldStatus = $order->status;
 
-        $notes = ($order->notes ?? '') . "\n[" . now()->toIso8601String() . "] Status updated to {$status}";
+        $notes = ($order->notes ?? '')."\n[".now()->toIso8601String()."] Status updated to {$status}";
         if ($statusMessage) {
             $notes .= ": {$statusMessage}";
         }
@@ -81,7 +82,7 @@ class OrderService
             } catch (\Throwable $e) {
                 Log::error('Sale creation from order failed', [
                     'order_reference' => $order->reference,
-                    'error'           => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
         } elseif ($oldStatus === 'APPROVED' && in_array($status, ['DECLINED', 'VOIDED', 'ERROR'])) {
@@ -99,6 +100,7 @@ class OrderService
             $order->customer_phone,
             $order->payment_method,
             $order->total_amount_cents,
+            $order->items_data ?? [],
         ]);
 
         SendWhatsAppJob::dispatch('notifyCustomerOrderApproved', [

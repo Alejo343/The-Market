@@ -36,7 +36,9 @@
       "Bash(./vendor/bin/pint --dirty)",
       "PowerShell(.\\\\vendor\\\\bin\\\\pint --dirty 2>&1)",
       "Bash(ssh mivps *)",
-      "Bash(xargs grep -l -i \"user\\\\|role\")"
+      "Bash(xargs grep -l -i \"user\\\\|role\")",
+      "PowerShell(php artisan make:mail StoreOrderNotificationMail --no-interaction)",
+      "PowerShell(php artisan vendor:bin/pint --dirty 2>&1)"
     ]
   }
 }

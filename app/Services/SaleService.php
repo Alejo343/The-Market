@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\CreateSiigoInvoiceJob;
 use App\Jobs\SendWhatsAppJob;
 use App\Mail\OrderConfirmationMail;
+use App\Mail\StoreOrderNotificationMail;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Sale;
@@ -178,6 +179,11 @@ class SaleService
 
             if ($order->customer_email) {
                 Mail::to($order->customer_email)->queue(new OrderConfirmationMail($sale, $order));
+            }
+
+            $storeEmail = config('services.store.notification_email');
+            if ($storeEmail) {
+                Mail::to($storeEmail)->queue(new StoreOrderNotificationMail($sale, $order));
             }
 
             SendWhatsAppJob::dispatch('notifyBusinessSaleCreated', [
