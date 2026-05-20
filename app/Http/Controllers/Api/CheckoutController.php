@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Services\WompiService;
 use App\Services\OrderService;
+use App\Services\WompiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,6 +21,7 @@ class CheckoutController extends Controller
     {
         try {
             $data = $this->wompiService->getAcceptance();
+
             return response()->json($data);
         } catch (\Exception $e) {
             return response()->json(
@@ -42,6 +43,7 @@ class CheckoutController extends Controller
                 $validated['reference'],
                 $validated['amountInCents']
             );
+
             return response()->json(['signature' => $signature]);
         } catch (\Exception $e) {
             return response()->json(
@@ -55,6 +57,7 @@ class CheckoutController extends Controller
     {
         try {
             $data = $this->wompiService->getPseInstitutions();
+
             return response()->json($data);
         } catch (\Exception $e) {
             return response()->json(
@@ -67,20 +70,21 @@ class CheckoutController extends Controller
     public function nequiPay(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone'                        => 'required|string',
-            'amountInCents'                => 'required|integer|min:1',
-            'customerEmail'                => 'required|email',
-            'customerName'                 => 'required|string',
-            'customerPhone'                => 'required|string',
-            'customerAddress'              => 'required|string',
-            'customerCity'                 => 'required|string',
-            'customerIdentificationType'   => 'nullable|string|in:CC,CE,NIT,PP,TI,PAS',
-            'customerIdentification'       => 'nullable|string|max:20',
-            'customerBusinessName'         => 'nullable|string|max:150',
-            'items'                        => 'required|array',
-            'notes'                        => 'nullable|string',
-            'deliveryZoneId'               => 'nullable|integer|exists:delivery_zones,id',
-            'deliveryCostCents'            => 'nullable|integer|min:0',
+            'phone' => 'required|string',
+            'amountInCents' => 'required|integer|min:1',
+            'customerEmail' => 'required|email',
+            'customerName' => 'required|string',
+            'customerPhone' => 'required|string',
+            'customerAddress' => 'required|string',
+            'customerCity' => 'required|string',
+            'customerIdentificationType' => 'nullable|string|in:CC,CE,NIT,PP,TI,PAS',
+            'customerIdentification' => 'nullable|string|max:20',
+            'customerBusinessName' => 'nullable|string|max:150',
+            'items' => 'required|array',
+            'notes' => 'nullable|string',
+            'deliveryZoneId' => 'nullable|integer|exists:delivery_zones,id',
+            'deliveryCostCents' => 'nullable|integer|min:0',
+            'deliveryVariantId' => 'nullable|integer|exists:product_variants,id',
         ]);
 
         try {
@@ -102,6 +106,7 @@ class CheckoutController extends Controller
                 $validated['customerIdentificationType'] ?? null,
                 $validated['customerIdentification'] ?? null,
                 $validated['customerBusinessName'] ?? null,
+                $validated['deliveryVariantId'] ?? null,
             );
 
             $txData = $this->wompiService->createNequiTransaction(
@@ -129,21 +134,22 @@ class CheckoutController extends Controller
     public function cardPay(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'cardToken'                    => 'required|string',
-            'amountInCents'                => 'required|integer|min:1',
-            'customerEmail'                => 'required|email',
-            'customerName'                 => 'required|string',
-            'customerPhone'                => 'required|string',
-            'customerAddress'              => 'required|string',
-            'customerCity'                 => 'required|string',
-            'customerIdentificationType'   => 'nullable|string|in:CC,CE,NIT,PP,TI,PAS',
-            'customerIdentification'       => 'nullable|string|max:20',
-            'customerBusinessName'         => 'nullable|string|max:150',
-            'items'                        => 'required|array',
-            'installments'                 => 'nullable|integer|min:1|max:36',
-            'notes'                        => 'nullable|string',
-            'deliveryZoneId'               => 'nullable|integer|exists:delivery_zones,id',
-            'deliveryCostCents'            => 'nullable|integer|min:0',
+            'cardToken' => 'required|string',
+            'amountInCents' => 'required|integer|min:1',
+            'customerEmail' => 'required|email',
+            'customerName' => 'required|string',
+            'customerPhone' => 'required|string',
+            'customerAddress' => 'required|string',
+            'customerCity' => 'required|string',
+            'customerIdentificationType' => 'nullable|string|in:CC,CE,NIT,PP,TI,PAS',
+            'customerIdentification' => 'nullable|string|max:20',
+            'customerBusinessName' => 'nullable|string|max:150',
+            'items' => 'required|array',
+            'installments' => 'nullable|integer|min:1|max:36',
+            'notes' => 'nullable|string',
+            'deliveryZoneId' => 'nullable|integer|exists:delivery_zones,id',
+            'deliveryCostCents' => 'nullable|integer|min:0',
+            'deliveryVariantId' => 'nullable|integer|exists:product_variants,id',
         ]);
 
         try {
@@ -159,12 +165,13 @@ class CheckoutController extends Controller
                 $validated['customerCity'],
                 $validated['items'],
                 $validated['amountInCents'],
-                "Installments: " . ($validated['installments'] ?? 1) . ($validated['notes'] ? "\n" . $validated['notes'] : ''),
+                'Installments: '.($validated['installments'] ?? 1).($validated['notes'] ? "\n".$validated['notes'] : ''),
                 $validated['deliveryZoneId'] ?? null,
                 $validated['deliveryCostCents'] ?? 0,
                 $validated['customerIdentificationType'] ?? null,
                 $validated['customerIdentification'] ?? null,
                 $validated['customerBusinessName'] ?? null,
+                $validated['deliveryVariantId'] ?? null,
             );
 
             $txData = $this->wompiService->createCardTransaction(
@@ -193,25 +200,26 @@ class CheckoutController extends Controller
     public function psePay(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'amountInCents'                => 'required|integer|min:1',
-            'customerEmail'                => 'required|email',
-            'fullName'                     => 'required|string',
-            'phone'                        => 'required|string',
-            'customerAddress'              => 'required|string',
-            'customerCity'                 => 'required|string',
-            'customerIdentificationType'   => 'nullable|string|in:CC,CE,NIT,PP,TI,PAS',
-            'customerIdentification'       => 'nullable|string|max:20',
-            'customerBusinessName'         => 'nullable|string|max:150',
-            'userType'                     => 'required|integer|in:0,1',
-            'userLegalIdType'              => 'required|string|in:CC,CE,NIT,PP',
-            'userLegalId'                  => 'required|string',
-            'financialInstitutionCode'     => 'required|string',
-            'redirectUrl'                  => 'required|url',
-            'items'                        => 'required|array',
-            'paymentDescription'           => 'nullable|string',
-            'notes'                        => 'nullable|string',
-            'deliveryZoneId'               => 'nullable|integer|exists:delivery_zones,id',
-            'deliveryCostCents'            => 'nullable|integer|min:0',
+            'amountInCents' => 'required|integer|min:1',
+            'customerEmail' => 'required|email',
+            'fullName' => 'required|string',
+            'phone' => 'required|string',
+            'customerAddress' => 'required|string',
+            'customerCity' => 'required|string',
+            'customerIdentificationType' => 'nullable|string|in:CC,CE,NIT,PP,TI,PAS',
+            'customerIdentification' => 'nullable|string|max:20',
+            'customerBusinessName' => 'nullable|string|max:150',
+            'userType' => 'required|integer|in:0,1',
+            'userLegalIdType' => 'required|string|in:CC,CE,NIT,PP',
+            'userLegalId' => 'required|string',
+            'financialInstitutionCode' => 'required|string',
+            'redirectUrl' => 'required|url',
+            'items' => 'required|array',
+            'paymentDescription' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'deliveryZoneId' => 'nullable|integer|exists:delivery_zones,id',
+            'deliveryCostCents' => 'nullable|integer|min:0',
+            'deliveryVariantId' => 'nullable|integer|exists:product_variants,id',
         ]);
 
         try {
@@ -227,12 +235,13 @@ class CheckoutController extends Controller
                 $validated['customerCity'],
                 $validated['items'],
                 $validated['amountInCents'],
-                "Bank: " . $validated['financialInstitutionCode'] . ($validated['notes'] ? "\n" . $validated['notes'] : ''),
+                'Bank: '.$validated['financialInstitutionCode'].($validated['notes'] ? "\n".$validated['notes'] : ''),
                 $validated['deliveryZoneId'] ?? null,
                 $validated['deliveryCostCents'] ?? 0,
                 $validated['customerIdentificationType'] ?? null,
                 $validated['customerIdentification'] ?? null,
                 $validated['customerBusinessName'] ?? null,
+                $validated['deliveryVariantId'] ?? null,
             );
 
             $txData = $this->wompiService->createPseTransaction(
@@ -271,6 +280,7 @@ class CheckoutController extends Controller
     {
         try {
             $data = $this->wompiService->getTransactionStatus($transactionId);
+
             return response()->json($data);
         } catch (\Exception $e) {
             return response()->json(
@@ -285,7 +295,7 @@ class CheckoutController extends Controller
         try {
             $order = $this->orderService->findByReference($reference);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json(['error' => 'Orden no encontrada'], 404);
             }
 

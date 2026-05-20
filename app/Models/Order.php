@@ -22,19 +22,25 @@ class Order extends Model
         'items_data',
         'total_amount_cents',
         'delivery_zone_id',
+        'delivery_variant_id',
         'delivery_cost_cents',
         'notes',
     ];
 
     protected $casts = [
-        'items_data'           => 'json',
-        'delivery_cost_cents'  => 'integer',
-        'created_at'           => 'datetime',
-        'updated_at'           => 'datetime',
+        'items_data' => 'json',
+        'delivery_cost_cents' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    public function deliveryZone()
+    public function deliveryZone(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(DeliveryZone::class);
+    }
+
+    public function deliveryVariant(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'delivery_variant_id');
     }
 }

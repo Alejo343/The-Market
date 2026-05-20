@@ -157,6 +157,25 @@ class SaleService
                 $taxTotal += $itemTax;
             }
 
+            if ($order->delivery_variant_id && $order->delivery_cost_cents > 0) {
+                $deliveryVariant = ProductVariant::with('tax')->find($order->delivery_variant_id);
+                if ($deliveryVariant) {
+                    $deliveryPrice = $order->delivery_cost_cents / 100;
+                    $deliveryTax = $deliveryVariant->tax ? $deliveryVariant->tax->calculateTaxAmount($deliveryPrice) : 0;
+
+                    $saleItems[] = [
+                        'item_type' => ProductVariant::class,
+                        'item_id' => $order->delivery_variant_id,
+                        'quantity' => 1,
+                        'price' => $deliveryPrice,
+                        'subtotal' => $deliveryPrice,
+                    ];
+
+                    $subtotal += $deliveryPrice;
+                    $taxTotal += $deliveryTax;
+                }
+            }
+
             $sale = Sale::create([
                 'order_reference' => $order->reference,
                 'channel' => 'online',

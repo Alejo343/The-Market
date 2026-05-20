@@ -29,6 +29,7 @@ class OrderService
         ?string $customerIdentificationType = null,
         ?string $customerIdentification = null,
         ?string $customerBusinessName = null,
+        ?int $deliveryVariantId = null,
     ): Order {
         return Order::create([
             'reference' => $reference,
@@ -45,6 +46,7 @@ class OrderService
             'items_data' => $items,
             'total_amount_cents' => $totalAmountCents,
             'delivery_zone_id' => $deliveryZoneId,
+            'delivery_variant_id' => $deliveryVariantId,
             'delivery_cost_cents' => $deliveryCostCents,
             'notes' => $notes,
         ]);

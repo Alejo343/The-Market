@@ -13,7 +13,7 @@ new class extends Component {
 
     public function with(): array
     {
-        $order = Order::where('reference', $this->reference)->firstOrFail();
+        $order = Order::with('deliveryZone')->where('reference', $this->reference)->firstOrFail();
 
         return ['order' => $order];
     }
@@ -149,6 +149,25 @@ new class extends Component {
                         <p class="text-gray-400 text-sm">Sin productos</p>
                     </div>
                 @endforelse
+
+                @if ($order->delivery_cost_cents > 0)
+                    <div class="flex items-center justify-between px-6 py-3.5 border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="shrink-0 w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1.293 13H17.707L19 8M10 12v5M14 12v5"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Envío</p>
+                                @if ($order->deliveryZone)
+                                    <p class="text-xs text-gray-400">{{ $order->deliveryZone->name }}</p>
+                                @endif
+                            </div>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-800">${{ number_format($order->delivery_cost_cents / 100, 0, ',', '.') }}</span>
+                    </div>
+                @endif
 
                 <div class="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-100">
                     <span class="text-sm font-semibold text-gray-600">Total de la orden</span>
