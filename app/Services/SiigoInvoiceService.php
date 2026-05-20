@@ -14,31 +14,32 @@ class SiigoInvoiceService
 
     public function createFromSale(Sale $sale): ?string
     {
-        $sale->loadMissing(['items.item']);
+        $sale->loadMissing(['items.item.product']);
 
         try {
             $payload = $this->buildPayload($sale);
 
             $response = Http::withHeaders($this->auth->headers())
-                ->post(config('services.siigo.api_url') . '/v1/invoices', $payload);
+                ->post(config('services.siigo.api_url').'/v1/invoices', $payload);
 
             if ($response->successful()) {
                 $invoiceId = (string) $response->json('id');
                 $sale->update(['siigo_invoice_id' => $invoiceId]);
+
                 return $invoiceId;
             }
 
             Log::error('Siigo invoice creation failed', [
                 'sale_id' => $sale->id,
-                'status'  => $response->status(),
-                'body'    => $response->body(),
+                'status' => $response->status(),
+                'body' => $response->body(),
             ]);
 
             return null;
         } catch (Throwable $e) {
             Log::error('Siigo invoice exception', [
                 'sale_id' => $sale->id,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return null;
@@ -53,14 +54,14 @@ class SiigoInvoiceService
             ],
             'customer' => [
                 'identification' => $sale->customer_identification ?? '222222222',
-                'branch_office'  => 0,
+                'branch_office' => 0,
             ],
-            'seller'   => (int) config('services.siigo.seller_id'),
-            'date'     => $sale->created_at->format('Y-m-d'),
-            'items'    => $this->buildItems($sale),
+            'seller' => (int) config('services.siigo.seller_id'),
+            'date' => $sale->created_at->format('Y-m-d'),
+            'items' => $this->buildItems($sale),
             'payments' => [
                 [
-                    'id'    => (int) config('services.siigo.payment_type_id'),
+                    'id' => (int) config('services.siigo.payment_type_id'),
                     'value' => (float) $sale->total,
                 ],
             ],
@@ -72,10 +73,10 @@ class SiigoInvoiceService
         return $sale->items
             ->filter(fn ($item) => $item->item instanceof ProductVariant && $item->item->sku)
             ->map(fn ($item) => [
-                'code'        => $item->item->sku,
-                'description' => $item->item->presentation ?? $item->item->sku,
-                'quantity'    => round((float) $item->quantity, 2),
-                'price'       => round((float) $item->price, 2),
+                'code' => $item->item->sku,
+                'description' => $item->item->product->name ?? $item->item->presentation ?? $item->item->sku,
+                'quantity' => round((float) $item->quantity, 2),
+                'price' => round((float) $item->price, 2),
             ])
             ->values()
             ->toArray();
