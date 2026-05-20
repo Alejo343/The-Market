@@ -36,7 +36,10 @@ new class extends Component {
             $regions = $regionService->list(activeOnly: $this->showActiveOnly, search: $this->search);
 
             $regions->loadCount(['products']);
-            $regions->load('parent');
+            $regions->load([
+                'parent',
+                'children' => fn ($q) => $q->withCount('products'),
+            ]);
 
             $allRegions = Region::orderBy('name')->get();
 
@@ -368,8 +371,16 @@ new class extends Component {
                             @endif
                         </td>
                         <td class="px-6 py-4">
+                            @php
+                                $directCount = $region->products_count ?? 0;
+                                $childrenCount = $region->children->sum('products_count');
+                                $totalCount = $directCount + $childrenCount;
+                            @endphp
                             <span class="text-sm text-gray-600">
-                                {{ $region->products_count ?? 0 }} productos
+                                {{ $totalCount }} productos
+                                @if ($childrenCount > 0)
+                                    <span class="text-xs text-gray-400">({{ $directCount }} directos)</span>
+                                @endif
                             </span>
                         </td>
                         <td class="px-6 py-4">

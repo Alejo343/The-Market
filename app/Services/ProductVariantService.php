@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Region;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Exception;
@@ -42,8 +43,10 @@ class ProductVariantService
             });
         }
         if ($regionId) {
-            $query->whereHas('product', function ($q) use ($regionId) {
-                $q->where('region_id', $regionId);
+            $childIds = Region::where('parent_id', $regionId)->pluck('id');
+            $allIds = $childIds->prepend($regionId);
+            $query->whereHas('product', function ($q) use ($allIds) {
+                $q->whereIn('region_id', $allIds);
             });
         }
 

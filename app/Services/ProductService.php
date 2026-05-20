@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\Region;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -39,7 +40,8 @@ class ProductService
         }
 
         if ($regionId) {
-            $query->where('region_id', $regionId);
+            $childIds = Region::where('parent_id', $regionId)->pluck('id');
+            $query->whereIn('region_id', $childIds->prepend($regionId));
         }
 
         if ($saleType) {
